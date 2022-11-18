@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Components;
+using Heron.MudCalendar;
 namespace MudBlazor.Docs.Compiler
 {
     public class DocStrings
@@ -32,34 +33,10 @@ namespace MudBlazor.Docs.Compiler
                 cb.IndentLevel++;
 
                 var assembly = typeof(MudText).Assembly;
-                foreach (var type in assembly.GetTypes().OrderBy(t => GetSaveTypename(t)))
-                {
-                    foreach (var property in type.GetPropertyInfosWithAttribute<ParameterAttribute>())
-                    {
-                        var doc = property.GetDocumentation() ?? "";
-                        doc = convertSeeTags(doc);
-                        doc = Regex.Replace(doc, @"</?.+?>", "");  // remove all other XML tags
-                        cb.AddLine($"public const string {GetSaveTypename(type)}_{property.Name} = @\"{EscapeDescription(doc).Trim()}\";\n");
-                    }
+                BuildAssembly(assembly, cb);
 
-                    // TableContext was causing conflicts due to the imperfect mapping from the name of class to the name of field in DocStrings
-                    if (type.IsSubclassOf(typeof(Attribute)) || GetSaveTypename(type) == "TypeInference"
-                            || type == typeof(Utilities.CssBuilder) || type == typeof(TableContext) || GetSaveTypename(type).StartsWith("EventUtil_"))
-                        continue;
-
-                    foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.FlattenHierarchy))
-                    {
-                        if (!hiddenMethods.Any(x => x.Contains(method.Name)) && !method.Name.StartsWith("get_") && !method.Name.StartsWith("set_"))
-                        {
-                            // omit methods defined in System.Enum
-                            if (GetBaseDefinitionClass(method) == typeof(Enum))
-                                continue;
-
-                            var doc = method.GetDocumentation() ?? "";
-                            cb.AddLine($"public const string {GetSaveTypename(type)}_method_{GetSaveMethodIdentifier(method)} = @\"{EscapeDescription(doc)}\";\n");
-                        }
-                    }
-                }
+                assembly = typeof(MudCalendar<>).Assembly;
+                BuildAssembly(assembly, cb);
 
                 cb.IndentLevel--;
                 cb.AddLine("}");
@@ -78,6 +55,38 @@ namespace MudBlazor.Docs.Compiler
             }
 
             return success;
+        }
+
+        private void BuildAssembly(Assembly assembly, CodeBuilder cb)
+        {
+            foreach (var type in assembly.GetTypes().OrderBy(t => GetSaveTypename(t)))
+            {
+                foreach (var property in type.GetPropertyInfosWithAttribute<ParameterAttribute>())
+                {
+                    var doc = property.GetDocumentation() ?? "";
+                    doc = convertSeeTags(doc);
+                    doc = Regex.Replace(doc, @"</?.+?>", "");  // remove all other XML tags
+                    cb.AddLine($"public const string {GetSaveTypename(type)}_{property.Name} = @\"{EscapeDescription(doc).Trim()}\";\n");
+                }
+
+                // TableContext was causing conflicts due to the imperfect mapping from the name of class to the name of field in DocStrings
+                if (type.IsSubclassOf(typeof(Attribute)) || GetSaveTypename(type) == "TypeInference"
+                        || type == typeof(Utilities.CssBuilder) || type == typeof(TableContext) || GetSaveTypename(type).StartsWith("EventUtil_"))
+                    continue;
+
+                foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.FlattenHierarchy))
+                {
+                    if (!hiddenMethods.Any(x => x.Contains(method.Name)) && !method.Name.StartsWith("get_") && !method.Name.StartsWith("set_"))
+                    {
+                        // omit methods defined in System.Enum
+                        if (GetBaseDefinitionClass(method) == typeof(Enum))
+                            continue;
+
+                        var doc = method.GetDocumentation() ?? "";
+                        cb.AddLine($"public const string {GetSaveTypename(type)}_method_{GetSaveMethodIdentifier(method)} = @\"{EscapeDescription(doc)}\";\n");
+                    }
+                }
+            }
         }
 
         private static string GetSaveTypename(Type t) => Regex.Replace(t.ConvertToCSharpSource(), @"[\.,<>]", "_").TrimEnd('_');

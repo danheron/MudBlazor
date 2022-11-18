@@ -7,15 +7,15 @@
             </CascadingValue>
         </div>
         <div class="docs-navigation-footer">
-            <NavigationFooter Section=_section Previous="@_previous" Next="@_next" />
+            <NavigationFooter Section=_section />
         </div>
     </MudContainer>
-    @if (DisplayFooter)
+    @*@if (DisplayFooter)
     {
         <MudContainer MaxWidth="MaxWidth.Large" Class="mt-16">
             <Footer />
         </MudContainer>
-    }
+    }*@
     <MudDrawer Class="docs-page-content-navigation-drawer" @bind-Open="_contentDrawerOpen" Breakpoint="Breakpoint.Lg" Anchor="Anchor.End" ClipMode="DrawerClipMode.Always" Elevation="0" Color="Color.Transparent">
         @if (_displayView)
         {
@@ -28,9 +28,9 @@
             </div>
         }
         <MudPageContentNavigation SectionClassSelector="docs-section-header" @ref="_contentNavigation" ActivateFirstSectionAsDefault="true"/>
-        @if (_renderAds)
+        @*@if (_renderAds)
         {
             <MudElement HtmlTag="script" async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CESDLK3E&placement=mudblazorcom" id="_carbonads_js"></MudElement>
-        }
+        }*@
     </MudDrawer>
 </MudMainContent>

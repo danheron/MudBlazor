@@ -63,7 +63,7 @@ else
         </div>
     </DocsPageSection>
 }
-@if (_isApiPage && !string.IsNullOrEmpty(ComponentLink))
+@*@if (_isApiPage && !string.IsNullOrEmpty(ComponentLink))
 {
     <link Rel="canonical" Href="@($"https://mudblazor.com/{ComponentLink}")" />
     <DocsPageSection api-link-section>
@@ -78,7 +78,7 @@ else
             </ul>
         </div>
     </DocsPageSection>
-}
+}*@
 
 @code {
 

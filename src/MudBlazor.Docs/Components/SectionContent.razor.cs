@@ -9,9 +9,11 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Reflection;
 using Microsoft.AspNetCore.Components;
 using MudBlazor.Docs.Extensions;
 using MudBlazor.Docs.Models;
+using Heron.MudCalendar;
 
 namespace MudBlazor.Docs.Components;
 
@@ -51,12 +53,14 @@ public partial class SectionContent
     [Parameter] public bool DarkenBackground { get; set; }
     [Parameter] public bool Outlined { get; set; } = true;
     [Parameter] public bool ShowCode { get; set; } = true;
+    [Parameter] public bool AllowRunCode { get; set; } = true;
     [Parameter] public bool Block { get; set; }
     [Parameter] public bool FullWidth { get; set; }
     [Parameter] public string Code { get; set; }
     [Parameter] public string HighLight { get; set; }
     [Parameter] public IEnumerable<CodeFile> Codes { get; set; }
     [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public Assembly Assembly { get; set; }
     
     private bool _hasCode;
     private string _activeCode;
@@ -106,8 +110,9 @@ public partial class SectionContent
     {
         try
         {
-            var key = typeof(SectionContent).Assembly.GetManifestResourceNames().FirstOrDefault(x => x.Contains($".{code}Code.html"));
-            using (var stream = typeof(SectionContent).Assembly.GetManifestResourceStream(key))
+            var assembly = Assembly ?? typeof(SectionContent).Assembly;
+            var key = assembly.GetManifestResourceNames().FirstOrDefault(x => x.Contains($".{code}Code.html"));
+            using (var stream = assembly.GetManifestResourceStream(key))
             using (var reader = new StreamReader(stream))
             {
                 var read = reader.ReadToEnd();

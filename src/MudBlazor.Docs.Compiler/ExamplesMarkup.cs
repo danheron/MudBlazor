@@ -26,7 +26,7 @@ namespace MudBlazor.Docs.Compiler
                     lastCheckedTime = lastNewFilesToBuild.LastWriteTime;
                 }
 
-                var directoryInfo = new DirectoryInfo(paths.DocsDirPath);
+                var directoryInfo = new DirectoryInfo(paths.CalendarDocsDirPath);
 
                 foreach (var entry in directoryInfo.GetFiles("*.razor", SearchOption.AllDirectories))
                 {

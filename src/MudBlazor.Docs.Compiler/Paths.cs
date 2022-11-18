@@ -6,6 +6,7 @@ namespace MudBlazor.Docs.Compiler
     public class Paths
     {
         private const string DocsDirectory = "MudBlazor.Docs";
+        private const string CalendarDocsDirectory = "../../Heron.MudCalendar/Heron.MudCalendar.Docs";
         private const string TestDirectory = "MudBlazor.UnitTests";
         private const string SnippetsFile = "Snippets.generated.cs";
         private const string DocStringsFile = "DocStrings.generated.cs";
@@ -35,6 +36,14 @@ namespace MudBlazor.Docs.Compiler
             get
             {
                 return Directory.EnumerateDirectories(SrcDirPath, DocsDirectory).FirstOrDefault();
+            }
+        }
+
+        public string CalendarDocsDirPath
+        {
+            get
+            {
+                return Directory.EnumerateDirectories(SrcDirPath, CalendarDocsDirectory).FirstOrDefault();
             }
         }
 
@@ -90,7 +99,7 @@ namespace MudBlazor.Docs.Compiler
         {
             get
             {
-                return Path.Join(DocsDirPath, NewFilesToBuild);
+                return Path.Join(CalendarDocsDirPath, NewFilesToBuild);
             }
         }
     }

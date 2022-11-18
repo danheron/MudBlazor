@@ -29,7 +29,7 @@ namespace MudBlazor.Docs.Compiler
                 cb.AddLine("{");
                 cb.IndentLevel++;
 
-                foreach (var entry in Directory.EnumerateFiles(paths.DocsDirPath, "*.razor", SearchOption.AllDirectories)
+                foreach (var entry in Directory.EnumerateFiles(paths.CalendarDocsDirPath, "*.razor", SearchOption.AllDirectories)
                     .OrderBy(e => e.Replace("\\", "/"), StringComparer.Ordinal))
                 {
                     var filename = Path.GetFileName(entry);

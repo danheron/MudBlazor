@@ -13,4 +13,12 @@
     <ProjectReference Include="..\MudBlazor\MudBlazor.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="Heron.MudCalendar" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Heron.MudCalendar">
+      <HintPath>..\..\..\Heron.MudCalendar\Heron.MudCalendar\bin\Debug\net6.0\Heron.MudCalendar.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>
