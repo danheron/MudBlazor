@@ -7,14 +7,12 @@
 
   <ItemGroup>
     <PackageReference Include="ColorCode.HTML" Version="2.0.14" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\MudBlazor\MudBlazor.csproj" />
+    <PackageReference Include="MudBlazor" Version="6.1.7" />
   </ItemGroup>
 
   <ItemGroup>
     <None Remove="Heron.MudCalendar" />
+    <None Remove="MudBlazor" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Heron.MudCalendar">

@@ -80,11 +80,11 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="7.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0" />
     <PackageReference Include="Blazored.LocalStorage" Version="4.3.0" />
+    <PackageReference Include="MudBlazor" Version="6.1.7" />
   </ItemGroup>
 
   <!--Project dependencies-->
   <ItemGroup>
-    <ProjectReference Include="../MudBlazor/MudBlazor.csproj" />
       <ProjectReference Include="../MudBlazor.Examples.Data/MudBlazor.Examples.Data.csproj" />
   </ItemGroup>
 
@@ -117,6 +117,7 @@
 
   <ItemGroup>
     <None Remove="Heron.MudCalendar" />
+    <None Remove="MudBlazor" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Heron.MudCalendar">
