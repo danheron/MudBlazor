@@ -121,7 +121,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Heron.MudCalendar">
-      <HintPath>..\..\..\Heron.MudCalendar\Heron.MudCalendar\bin\Debug\net6.0\Heron.MudCalendar.dll</HintPath>
+      <HintPath>..\..\..\Heron.MudCalendar\Heron.MudCalendar\bin\Release\net7.0\Heron.MudCalendar.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>
