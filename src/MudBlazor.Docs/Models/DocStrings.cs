@@ -30,7 +30,7 @@ namespace MudBlazor.Docs.Models
 
         public static string GetSaveTypename(Type t) => Regex.Replace(t.ConvertToCSharpSource(), @"[\.]", "_")
             .Replace("<T>", "")
-            .Replace("<CalendarItem>", "")  // Hack to make it work with MudCalendar
+            //.Replace("<CalendarItem>", "")  // Hack to make it work with MudCalendar
             .TrimEnd('_');
 
         private static string GetSaveMethodIdentifier(MethodInfo method) => Regex.Replace(method.ToString().Replace("MudBlazor.Docs.Models.T", "T"), "[^A-Za-z0-9_]", "_");  // method signature

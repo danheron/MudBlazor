@@ -35,7 +35,7 @@ namespace MudBlazor.Docs.Compiler
                 var assembly = typeof(MudText).Assembly;
                 BuildAssembly(assembly, cb);
 
-                assembly = typeof(MudCalendar<>).Assembly;
+                assembly = typeof(MudCalendar).Assembly;
                 BuildAssembly(assembly, cb);
 
                 cb.IndentLevel--;
