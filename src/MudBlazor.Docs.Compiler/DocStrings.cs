@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Components;
 using Heron.MudCalendar;
+using Heron.MudTotalCalendar;
 namespace MudBlazor.Docs.Compiler
 {
     public class DocStrings
@@ -36,6 +37,9 @@ namespace MudBlazor.Docs.Compiler
                 BuildAssembly(assembly, cb);
 
                 assembly = typeof(MudCalendar).Assembly;
+                BuildAssembly(assembly, cb);
+
+                assembly = typeof(MudTotalCalendar).Assembly;
                 BuildAssembly(assembly, cb);
 
                 cb.IndentLevel--;

@@ -6,7 +6,7 @@ namespace MudBlazor.Docs.Compiler
     public class Paths
     {
         private const string DocsDirectory = "MudBlazor.Docs";
-        private const string CalendarDocsDirectory = "../../Heron.MudCalendar/Heron.MudCalendar.Docs";
+        private const string CalendarDocsDirectory = "../../Heron.MudTotalCalendar/Heron.MudTotalCalendar.Docs";
         private const string TestDirectory = "MudBlazor.UnitTests";
         private const string SnippetsFile = "Snippets.generated.cs";
         private const string DocStringsFile = "DocStrings.generated.cs";

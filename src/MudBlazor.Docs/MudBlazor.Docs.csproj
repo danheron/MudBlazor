@@ -123,5 +123,8 @@
     <Reference Include="Heron.MudCalendar">
       <HintPath>..\..\..\Heron.MudCalendar\Heron.MudCalendar\bin\Release\net7.0\Heron.MudCalendar.dll</HintPath>
     </Reference>
+    <Reference Include="Heron.MudTotalCalendar">
+      <HintPath>..\..\..\Heron.MudTotalCalendar\Heron.MudTotalCalendar\bin\Release\net7.0\Heron.MudTotalCalendar.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>
