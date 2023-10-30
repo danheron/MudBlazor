@@ -8,6 +8,7 @@ using AngleSharp.Dom;
 using Bunit;
 using FluentAssertions;
 using Microsoft.AspNetCore.Components;
+using Moq;
 using MudBlazor.Docs.Examples;
 using MudBlazor.UnitTests.TestComponents;
 using NUnit.Framework;
@@ -117,7 +118,79 @@ namespace MudBlazor.UnitTests.Components
         }
 
         /// <summary>
-        /// Check if the loading and no records functionnality is working in grouped table.
+        /// Ensure that when the loading switch is enabled,
+        /// a new row appears in the table header without affecting the table body.
+        /// </summary>
+        [Test]
+        public void LoadingSwitchAddsRowToHeaderWithoutAffectingBody()
+        {
+            // Render the component
+            var comp = Context.RenderComponent<TableLoadingTest>();
+
+            // Initial count of header and body rows
+            var initialHeaderRows = comp.FindAll("thead tr");
+            var initialBodyRows = comp.FindAll("tbody tr");
+
+            // Verify initial state: 1 row in the header and 2 rows in the body
+            initialHeaderRows.Count.Should().Be(1);
+            initialBodyRows.Count.Should().Be(2);
+
+            // Toggle the loading switch to the 'loading' state
+            var loadingSwitch = comp.Find("#switch");
+            loadingSwitch.Change(true);
+
+            // Count rows after toggling the switch
+            var updatedHeaderRows = comp.FindAll("thead tr");
+            var updatedBodyRows = comp.FindAll("tbody tr");
+
+            // Verify updated state:
+            // 2 rows in the header (original + loading row) and 2 rows in the body (unchanged)
+            updatedHeaderRows.Count.Should().Be(2);
+            updatedBodyRows.Count.Should().Be(2);
+        }
+
+        /// <summary>
+        /// Ensure that when the table loader is visible,
+        /// adding new columns dynamically such as multi-selection
+        /// will not affect the number of columns in the row with the loader.
+        /// </summary>
+        [Test]
+        public void DynamicColumnsDoNotAffectLoadingRow()
+        {
+            // Render the component
+            var comp = Context.RenderComponent<TableLoadingTest>();
+
+            // Ensure table initially has 6 columns
+            var headersRow = comp.FindAll("thead tr")[0];
+            headersRow.ChildElementCount.Should().Be(6);
+
+            // Toggle the loading switch to the 'loading' state
+            var loadingSwitch = comp.Find("#switch");
+            loadingSwitch.Change(true);
+
+            // Get the loader row which is second row in the thead
+            var loaderRow = comp.FindAll("thead tr")[1];
+
+            // Verify that loader row has one child which is a loader cell
+            var loaderCell = loaderRow.QuerySelector(".mud-table-loading");
+            loaderCell.IsOnlyChild();
+
+            // Toggle the multi-selection switch to the 'on' state
+            var multiSelectionSwitch = comp.Find("#multi-selection");
+            multiSelectionSwitch.Change(true);
+
+            // Ensure table has 7 columns
+            headersRow = comp.FindAll("thead tr")[0];
+            headersRow.ChildElementCount.Should().Be(7);
+
+            // Verify that loader row still has one child
+            // which is a loader cell
+            loaderCell = loaderRow.QuerySelector(".mud-table-loading");
+            loaderCell.IsOnlyChild();
+        }
+
+        /// <summary>
+        /// Check if the loading and no records functionality is working in grouped table.
         /// </summary>
         [Test]
         public void TableGroupLoadingAndNoRecordsTest()
@@ -234,6 +307,28 @@ namespace MudBlazor.UnitTests.Components
             comp.FindAll("tr").Count.Should().Be(59);
         }
 
+        [Test]
+        public void TableFilterCachingTest()
+        {
+            var comp = Context.RenderComponent<TableFilterTest1>();
+            // print the generated html      
+            var table = comp.FindComponent<MudTable<string>>().Instance;
+            var searchString = comp.Find("#searchString");
+            table.FilteringRunCount.Should().Be(1);
+            // should return 3 items
+            searchString.Change("Ala");
+            table.FilteringRunCount.Should().Be(2);
+            // no matches
+            searchString.Change("ZZZ");
+            table.FilteringRunCount.Should().Be(3);
+            // should return 1 item
+            searchString.Change("Alaska");
+            table.FilteringRunCount.Should().Be(4);
+            // clear search
+            searchString.Change(string.Empty);
+            table.FilteringRunCount.Should().Be(5);
+        }
+
         /// <summary>
         /// simple navigation using the paging buttons
         /// </summary>
@@ -302,6 +397,19 @@ namespace MudBlazor.UnitTests.Components
             //navigate to specified page
             await table.InvokeAsync(() => table.Instance.NavigateTo(pageIndex));
             comp.FindAll("tr.mud-table-row")[0].TextContent.Should().Be(expectedFirstItem);
+        }
+
+        /// <summary>
+        /// page size option initial value test. Initial value should not be 10 since PageSizeOption is set to be new int[]{8, 16, 32}
+        /// </summary>
+        [Test]
+        public async Task TablePageSizeOptions()
+        {
+            var comp = Context.RenderComponent<TablePageSizeOptionsTest>();
+            // print the generated html      
+            // select elements needed for the test
+            var pager = comp.FindComponent<MudSelect<int>>().Instance;
+            pager.Value.Should().Be(8);
         }
 
         /// <summary>
@@ -1031,6 +1139,16 @@ namespace MudBlazor.UnitTests.Components
         }
 
         /// <summary>
+        /// The table should not render its NoContent fragment prior to loading server data
+        /// </summary>
+        [Test]
+        public async Task TableServerDataLoadingTest()
+        {
+            var comp = Context.RenderComponent<TableServerDataLoadingTest>();
+            comp.Instance.NoRecordsHasRendered.Should().BeFalse();
+        }
+
+        /// <summary>
         /// The table should render the classes and style to the tr using the RowStyleFunc and RowClassFunc parameters
         /// </summary>
         [Test]
@@ -1756,6 +1874,29 @@ namespace MudBlazor.UnitTests.Components
             table.Context.GroupRows.Count.Should().Be(4); // 4 categories
             var tr = comp.FindAll("tr").ToArray();
             tr.Length.Should().Be(5); // 1 table header + 4 group headers
+        }
+
+        [Test]
+        public void ExpandAndCollapsAllGroupsTest()
+        {
+            var comp = Context.RenderComponent<TableGroupingTest>();
+            var table = comp.Instance.tableInstance;
+            table.GroupBy = new TableGroupDefinition<TableGroupingTest.RacingCar>(rc => rc.Category, null) { GroupName = "Category", IsInitiallyExpanded = false, Expandable = true };
+            comp.Render();
+
+            // Header only since we have IsInitiallyExpanded = false
+            table.Context.GroupRows.Count.Should().Be(4);
+            comp.FindAll("tr").ToArray().Length.Should().Be(5); // 1 table header + 4 group headers
+
+            // Expand all groups
+            table.ExpandAllGroups();
+            comp.Render();
+            comp.FindAll("tr").ToArray().Length.Should().Be(18); // 1 table header + 4 group headers + 9 item rows + 4 group footers
+
+            // Collapse all groups
+            table.CollapseAllGroups();
+            comp.Render();
+            comp.FindAll("tr").ToArray().Length.Should().Be(5); // 1 table header + 4 group headers
         }
 
         /// <summary>

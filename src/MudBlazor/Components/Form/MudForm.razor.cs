@@ -63,6 +63,18 @@ namespace MudBlazor
 
         private bool _touched = false;
 
+        [Parameter]
+        [Category(CategoryTypes.Form.Behavior)]
+        public bool Disabled { get; set; }
+        [CascadingParameter(Name = "ParentDisabled")] private bool ParentDisabled { get; set; }
+        protected bool GetDisabledState() => Disabled || ParentDisabled;
+
+        [Parameter]
+        [Category(CategoryTypes.Form.Behavior)]
+        public bool ReadOnly { get; set; }
+        [CascadingParameter(Name = "ParentReadOnly")] private bool ParentReadOnly { get; set; }
+        protected bool GetReadOnlyState() => ReadOnly || ParentReadOnly;
+
         /// <summary>
         /// Validation debounce delay in milliseconds. This can help improve rendering performance of forms with real-time validation of inputs
         /// i.e. when textfields have Immediate="true".
@@ -198,7 +210,17 @@ namespace MudBlazor
                 _ = OnEvaluateForm();
         }
 
-        private void OnTimerComplete(object stateInfo) => InvokeAsync(OnEvaluateForm);
+        private void OnTimerComplete(object stateInfo)
+        {
+            try
+            {
+                InvokeAsync(OnEvaluateForm);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"An error occured while executing {nameof(OnEvaluateForm)}: {e.Message}");
+            }
+        }
 
         private bool _shouldRender = true; // <-- default is true, we need the form children to render
 
@@ -255,6 +277,7 @@ namespace MudBlazor
         /// <summary>
         /// Reset all form controls and reset their validation state.
         /// </summary>
+        [Obsolete($"Use {nameof(ResetAsync)} instead. This will ve removed in v7")]
         public void Reset()
         {
             foreach (var control in _formControls.ToArray())
@@ -265,6 +288,24 @@ namespace MudBlazor
             foreach (var form in ChildForms)
             {
                 form.Reset();
+            }
+
+            EvaluateForm(debounce: false);
+        }
+
+        /// <summary>
+        /// Reset all form controls and reset their validation state.
+        /// </summary>
+        public async Task ResetAsync()
+        {
+            foreach (var control in _formControls.ToArray())
+            {
+                await control.ResetAsync();
+            }
+
+            foreach (var form in ChildForms)
+            {
+                await form.ResetAsync();
             }
 
             EvaluateForm(debounce: false);
@@ -327,6 +368,11 @@ namespace MudBlazor
         public void Dispose()
         {
             _timer?.Dispose();
+            if (ParentMudForm != null)
+            {
+                ParentMudForm.ChildForms.Remove(this);
+                ParentMudForm.EvaluateForm(); // Need this to refresh the form state
+            }
         }
     }
 }

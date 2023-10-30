@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 using MudBlazor.Extensions;
 using MudBlazor.Utilities;
 
@@ -148,30 +149,23 @@ namespace MudBlazor
         /// </summary>
         [Parameter] public string NumericDownIcon { get; set; } = Icons.Material.Filled.KeyboardArrowDown;
 
+        /// <summary>
+        /// If true the input element will grow automatically with the text.
+        /// </summary>
+        [Parameter] public bool AutoGrow { get; set; }
+
+        /// <summary>
+        /// If AutoGrow is set to true, the input element will not grow bigger than MaxLines lines. If MaxLines is set to 0
+        /// or less, the property will be ignored.
+        /// </summary>
+        [Parameter] public int MaxLines { get; set; }
+
         private Size GetButtonSize() => Margin == Margin.Dense ? Size.Small : Size.Medium;
 
-        private bool _showClearable;
-
-        private void UpdateClearable(object value)
-        {
-            var showClearable = Clearable && ((value is string stringValue && !string.IsNullOrWhiteSpace(stringValue)) || (value is not string && value is not null));
-            if (_showClearable != showClearable)
-                _showClearable = showClearable;
-        }
-
-        protected override async Task UpdateTextPropertyAsync(bool updateValue)
-        {
-            await base.UpdateTextPropertyAsync(updateValue);
-            if (Clearable)
-                UpdateClearable(Text);
-        }
-
-        protected override async Task UpdateValuePropertyAsync(bool updateText)
-        {
-            await base.UpdateValuePropertyAsync(updateText);
-            if (Clearable)
-                UpdateClearable(Value);
-        }
+        /// <summary>
+        /// If true, Clearable is true and there is a non null value (non-string for string values)
+        /// </summary>
+        private bool GetClearable() => Clearable && ((Value is string stringValue && !string.IsNullOrWhiteSpace(stringValue)) || (Value is not string && Value is not null));
 
         protected virtual async Task ClearButtonClickHandlerAsync(MouseEventArgs e)
         {
@@ -201,6 +195,26 @@ namespace MudBlazor
             }
         }
 
+        [Inject] private IJSRuntime JsRuntime { get; set; } = null!;
+
+        private string _oldText = null;
+
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (AutoGrow && firstRender)
+            {
+                await JsRuntime.InvokeVoidAsyncWithErrorHandling("mudInputAutoGrow.initAutoGrow", ElementReference, MaxLines);
+                _oldText = _internalText;
+            }
+            else if(AutoGrow && _oldText != _internalText)
+            {
+                await JsRuntime.InvokeVoidAsyncWithErrorHandling("mudInputAutoGrow.adjustHeight", ElementReference);
+                _oldText = _internalText;
+            }
+
+            await base.OnAfterRenderAsync(firstRender);
+        }
+
         /// <summary>
         /// Sets the input text from outside programmatically
         /// </summary>
@@ -211,7 +225,6 @@ namespace MudBlazor
             _internalText = text;
             return SetTextAsync(text);
         }
-
 
         // Certain HTML5 inputs (dates and color) have a native placeholder
         private bool HasNativeHtmlPlaceholder()

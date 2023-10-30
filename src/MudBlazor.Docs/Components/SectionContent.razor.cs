@@ -13,6 +13,7 @@ using System.Reflection;
 using Microsoft.AspNetCore.Components;
 using MudBlazor.Docs.Extensions;
 using MudBlazor.Docs.Models;
+using MudBlazor.Docs.Services;
 using Heron.MudCalendar;
 
 namespace MudBlazor.Docs.Components;
@@ -20,6 +21,7 @@ namespace MudBlazor.Docs.Components;
 public partial class SectionContent
 {
     [Inject] protected IJsApiService JsApiService { get; set; }
+    [Inject] protected IDocsJsApiService DocsJsApiService { get; set; }
 
     protected string Classname =>
         new CssBuilder("docs-section-content")
@@ -49,6 +51,8 @@ public partial class SectionContent
             .AddClass("show-code", _hasCode && ShowCode)
             .Build();
 
+    private string _snippetId = "_" + Guid.NewGuid().ToString()[..8];
+
     [Parameter] public string Class { get; set; }
     [Parameter] public bool DarkenBackground { get; set; }
     [Parameter] public bool Outlined { get; set; } = true;
@@ -70,9 +74,9 @@ public partial class SectionContent
         if(Codes != null)
         {
             _hasCode = true;
-            _activeCode = Codes.FirstOrDefault().code;
+            _activeCode = Codes.FirstOrDefault()?.code;
         }
-        else if(!String.IsNullOrWhiteSpace(Code))
+        else if(!string.IsNullOrWhiteSpace(Code))
         {
             _hasCode = true;
             _activeCode = Code;
@@ -103,7 +107,10 @@ public partial class SectionContent
     
     private async Task CopyTextToClipboard()
     {
-        await JsApiService.CopyToClipboardAsync(Snippets.GetCode(Code));
+        var code = Snippets.GetCode(Code);
+        if (code == null)
+            code=await DocsJsApiService.GetInnerTextByIdAsync(_snippetId);
+        await JsApiService.CopyToClipboardAsync(code ?? $"Snippet '{Code}' not found!");
     }
 
     RenderFragment CodeComponent(string code) => builder =>
