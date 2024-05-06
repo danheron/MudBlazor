@@ -1,13 +1,14 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using MudBlazor.Utilities;
 
 namespace MudBlazor
 {
 #nullable enable
     public partial class MudMessageBox : MudComponentBase
     {
-        private bool _isVisible;
+        private bool _visible;
         private IDialogReference? _reference;
         private ActivatableCallback? _yesCallback, _cancelCallback, _noCallback;
 
@@ -120,20 +121,20 @@ namespace MudBlazor
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.MessageBox.Behavior)]
-        public bool IsVisible
+        public bool visible
         {
-            get => _isVisible;
+            get => _visible;
             set
             {
-                if (_isVisible == value)
+                if (_visible == value)
                 {
                     return;
                 }
 
-                _isVisible = value;
+                _visible = value;
                 if (IsInline)
                 {
-                    if (_isVisible)
+                    if (_visible)
                     {
                         _ = Show();
                     }
@@ -143,7 +144,7 @@ namespace MudBlazor
                     }
                 }
 
-                IsVisibleChanged.InvokeAsync(value);
+                VisibleChanged.InvokeAsync(value);
             }
         }
 
@@ -151,9 +152,13 @@ namespace MudBlazor
         /// Raised when the inline dialog's display status changes.
         /// </summary>
         [Parameter]
-        public EventCallback<bool> IsVisibleChanged { get; set; }
+        public EventCallback<bool> VisibleChanged { get; set; }
 
         private bool IsInline => DialogInstance == null;
+
+        protected string Classname =>
+            new CssBuilder("mud-message-box")
+            .Build();
 
         public async Task<bool?> Show(DialogOptions? options = null)
         {
@@ -171,7 +176,7 @@ namespace MudBlazor
                 [nameof(YesText)] = YesText,
                 [nameof(YesButton)] = YesButton,
             };
-            _reference = await DialogService.ShowAsync<MudMessageBox>(parameters: parameters, options: options, title: Title);
+            _reference = await DialogService.ShowAsync<MudMessageBox>(title: Title, parameters: parameters, options: options);
             var result = await _reference.Result;
             if (result.Canceled || result.Data is not bool data)
             {

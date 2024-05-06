@@ -1,10 +1,12 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Microsoft.AspNetCore.Components;
 
 namespace MudBlazor.Docs.Compiler
 {
+#nullable enable
     public class TestsForApiPages
     {
         public bool Execute()
@@ -24,9 +26,12 @@ namespace MudBlazor.Docs.Compiler
                 var cb = new CodeBuilder();
 
                 cb.AddHeader();
+                cb.AddLine("using Microsoft.AspNetCore.Components;");
+                cb.AddLine("using Microsoft.Extensions.DependencyInjection;");
                 cb.AddLine("using MudBlazor.Charts;");
                 cb.AddLine("using MudBlazor.Docs.Components;");
                 cb.AddLine("using MudBlazor.Internal;");
+                cb.AddLine("using MudBlazor.UnitTests.Mocks;");
                 cb.AddLine("using NUnit.Framework;");
                 cb.AddLine("using ComponentParameter = Bunit.ComponentParameter;");
                 cb.AddLine();
@@ -35,6 +40,7 @@ namespace MudBlazor.Docs.Compiler
                 cb.AddLine("{");
                 cb.IndentLevel++;
                 cb.AddLine("// These tests just check all the API pages to see if they throw any exceptions");
+                cb.AddLine("[System.CodeDom.Compiler.GeneratedCodeAttribute(\"MudBlazor.Docs.Compiler\", \"0.0.0.0\")]");
                 cb.AddLine("public partial class ApiDocsTests");
                 cb.AddLine("{");
                 cb.IndentLevel++;
@@ -45,7 +51,7 @@ namespace MudBlazor.Docs.Compiler
                         continue;
                     if (type.Name.Contains("Base"))
                         continue;
-                    if (type.Namespace.Contains("InternalComponents"))
+                    if (type.Namespace is not null && type.Namespace.Contains("InternalComponents"))
                         continue;
                     if (IsObsolete(type))
                         continue;
@@ -53,6 +59,7 @@ namespace MudBlazor.Docs.Compiler
                     cb.AddLine($"public void {SafeTypeName(type, removeT: true)}_API_Test()");
                     cb.AddLine("{");
                     cb.IndentLevel++;
+                    cb.AddLine(@$"ctx.Services.AddSingleton<NavigationManager>(new MockNavigationManager(""https://localhost:2112/"", ""https://localhost:2112/api/{SafeTypeName(type)}""));");
                     cb.AddLine(@$"ctx.RenderComponent<DocsApi>(ComponentParameter.CreateParameter(""Type"", typeof({SafeTypeName(type)})));");
                     cb.IndentLevel--;
                     cb.AddLine("}");
@@ -70,7 +77,7 @@ namespace MudBlazor.Docs.Compiler
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error generating {paths.ApiPageTestsFilePath} : {e.Message}");
+                Console.WriteLine($@"Error generating {paths.ApiPageTestsFilePath} : {e.Message}");
                 success = false;
             }
 
@@ -79,19 +86,42 @@ namespace MudBlazor.Docs.Compiler
 
         public static bool IsObsolete(Type type)
         {
-            var attributes = (ObsoleteAttribute[])
-                type.GetCustomAttributes(typeof(ObsoleteAttribute), false);
-            return (attributes != null && attributes.Length > 0);
+            var attributes = (ObsoleteAttribute[])type.GetCustomAttributes(typeof(ObsoleteAttribute), false);
+
+            return attributes is { Length: > 0 };
         }
 
         private static string SafeTypeName(Type type, bool removeT = false)
         {
             if (!type.IsGenericType)
+            {
                 return type.Name;
+            }
+
             var genericTypename = type.Name;
             if (removeT)
+            {
                 return genericTypename.Replace("`1", string.Empty).Replace("`2", string.Empty);
+            }
+
+            if (RequiresStructConstraint(type))
+            {
+                return genericTypename.Replace("`1", "<TStruct>").Replace("`2", "<T, U>");
+            }
             return genericTypename.Replace("`1", "<T>").Replace("`2", "<T, U>");
+        }
+
+        private static bool RequiresStructConstraint(Type componentType)
+        {
+            if (componentType.IsGenericType)
+            {
+                var genericArgs = componentType.GetGenericArguments();
+                var requiresStructConstraint = genericArgs.Any(arg => arg.GenericParameterAttributes.HasFlag(GenericParameterAttributes.NotNullableValueTypeConstraint));
+
+                return requiresStructConstraint;
+            }
+
+            return false;
         }
     }
 }
