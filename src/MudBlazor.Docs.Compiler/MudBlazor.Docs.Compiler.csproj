@@ -7,16 +7,17 @@
 
   <ItemGroup>
     <PackageReference Include="ColorCode.HTML" Version="2.0.15" />
-    <PackageReference Include="MudBlazor" Version="6.11.0" />
+    <PackageReference Include="MudBlazor" Version="7.0.0-preview.1" />
   </ItemGroup>
 
   <ItemGroup>
     <None Remove="Heron.MudCalendar" />
     <None Remove="MudBlazor" />
   </ItemGroup>
+  
   <ItemGroup>
     <Reference Include="Heron.MudCalendar">
-      <HintPath>..\..\..\Heron.MudCalendar\Heron.MudCalendar\bin\Debug\net7.0\Heron.MudCalendar.dll</HintPath>
+      <HintPath>..\..\..\Heron.MudCalendar\Heron.MudCalendar\bin\Debug\net8.0\Heron.MudCalendar.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

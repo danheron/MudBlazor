@@ -62,7 +62,9 @@ namespace MudBlazor.Docs.Components
             var relativePath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
             if (relativePath.Contains("#"))
             {
-                _anchor = relativePath.Split(new[] { "#" }, StringSplitOptions.RemoveEmptyEntries)[1];
+                var anchors = relativePath.Split(new[] { "#" }, StringSplitOptions.RemoveEmptyEntries);
+                _anchor = anchors.Count() > 1 ? anchors[1] : anchors[0];
+                //_anchor = relativePath.Split(new[] { "#" }, StringSplitOptions.RemoveEmptyEntries)[1];
             }
         }
 
