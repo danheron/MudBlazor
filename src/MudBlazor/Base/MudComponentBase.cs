@@ -66,8 +66,11 @@ namespace MudBlazor
         public Dictionary<string, object?> UserAttributes { get; set; } = new Dictionary<string, object?>();
 
         /// <summary>
-        /// Whether <see cref="JSRuntime" /> is available.
+        /// Whether the <see cref="JSRuntime" /> is available.
         /// </summary>
+        /// <remarks>
+        /// When <c>true</c>, JavaScript interop calls can be made.
+        /// </remarks>
         protected bool IsJSRuntimeAvailable { get; set; }
 
         /// <summary>
@@ -307,6 +310,24 @@ namespace MudBlazor
                             break;
                     }
                 }
+                else if (this is MudText)
+                {
+                    switch (parameter)
+                    {
+                        case "Inline":
+                            NotifyIllegalParameter(parameter);
+                            break;
+                    }
+                }
+                else if (MatchTypes(typeof(MudTable<>)))
+                {
+                    switch (parameter)
+                    {
+                        case "QuickColumns":
+                            NotifyIllegalParameter(parameter);
+                            break;
+                    }
+                }
                 else
                 {
                     switch (parameter)
@@ -363,6 +384,18 @@ namespace MudBlazor
                         case "IsCheckedChanged":
                         case "IsVisible":
                         case "IsVisibleChanged":
+                        case "IsOpen":
+                        case "IsOpened":
+                        case "IsOpenChanged":
+                        case "IsActive":
+                        case "ItemIsDisabled":
+                        case "IsSelected":
+                        case "IsSelectedChanged":
+                        case "IsEditable":
+                        case "IsEditing":
+                        case "IsEditSwitchBlocked":
+                        case "IsHidden":
+                        case "IsHiddenChanged":
                             NotifyIllegalParameter(parameter);
                             break;
                     }
