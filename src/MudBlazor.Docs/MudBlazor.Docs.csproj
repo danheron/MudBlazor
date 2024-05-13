@@ -83,7 +83,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="8.0.3" />
     <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
-    <PackageReference Include="MudBlazor" Version="7.0.0-preview.1" />
+    <PackageReference Include="MudBlazor" Version="7.0.0-preview.2" />
   </ItemGroup>
 
   <!--Project dependencies-->
