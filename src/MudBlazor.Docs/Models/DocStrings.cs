@@ -32,7 +32,13 @@ namespace MudBlazor.Docs.Models
             .Replace("<T>", "")
             //.Replace("<CalendarItem>", "")  // Hack to make it work with MudCalendar
             .TrimEnd('_');
+        
+        private static string GetSaveMethodIdentifier(MethodInfo method) => LetterDigitOrUnderscoreRegularExpression().Replace(method.ToString().Replace("MudBlazor.Docs.Models.T", "T"), "_");  // method signature
 
-        private static string GetSaveMethodIdentifier(MethodInfo method) => Regex.Replace(method.ToString().Replace("MudBlazor.Docs.Models.T", "T"), "[^A-Za-z0-9_]", "_");  // method signature
+        [GeneratedRegex(@"[\.]")]
+        private static partial Regex PeriodRegularExpression();
+
+        [GeneratedRegex("[^A-Za-z0-9_]")]
+        private static partial Regex LetterDigitOrUnderscoreRegularExpression();
     }
 }

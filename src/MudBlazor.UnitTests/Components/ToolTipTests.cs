@@ -57,7 +57,7 @@ namespace MudBlazor.UnitTests.Components
             popoverContentNode.Children.Should().BeEmpty();
 
             //not visible by default
-            tooltipComp.IsVisible.Should().BeFalse();
+            tooltipComp.Visible.Should().BeFalse();
 
             //trigger mouseover
 
@@ -67,7 +67,7 @@ namespace MudBlazor.UnitTests.Components
             popoverContentNode.TextContent.Should().Be("my tooltip content text");
             popoverContentNode.ClassList.Should().Contain("d-flex");
 
-            tooltipComp.IsVisible.Should().BeTrue();
+            tooltipComp.Visible.Should().BeTrue();
 
             //trigger mouseleave
             if (usingFocusout == false)
@@ -81,7 +81,7 @@ namespace MudBlazor.UnitTests.Components
             //no content should be visible
             popoverContentNode.Children.Should().BeEmpty();
 
-            tooltipComp.IsVisible.Should().BeFalse();
+            tooltipComp.Visible.Should().BeFalse();
         }
 
         [Test]
@@ -131,7 +131,7 @@ namespace MudBlazor.UnitTests.Components
 
             //content should be visible
             popoverContentNode.ClassList.Should().Contain("mud-tooltip");
-            popoverContentNode.ClassList.Should().Contain("d-block");
+            popoverContentNode.ClassList.Should().Contain("d-flex");
 
             comp.Find(".my-customer-paper").Children[0].TextContent.Should().Be("My content");
 
@@ -164,6 +164,19 @@ namespace MudBlazor.UnitTests.Components
         }
 
         [Test]
+        public async Task InnerClass_ChildContentWrapper()
+        {
+            var comp = Context.RenderComponent<ToolTipPopoverClassPropertyTest>();
+
+            var button = comp.Find("button");
+            await button.ParentElement.TriggerEventAsync("onmouseenter", new MouseEventArgs());
+
+            var wrapperDivNode = comp.Find("#my-tooltip-content").ParentElement;
+
+            wrapperDivNode.ClassList.Should().BeEquivalentTo(new[] { "d-block" });
+        }
+
+        [Test]
         [TestCase(false, new[] { "mud-tooltip" })]
         [TestCase(true, new[] { "mud-tooltip", "mud-tooltip-arrow" })]
         public async Task PopoverClass_PropertyArrow(bool arrowValue, string[] expectedClasses)
@@ -174,7 +187,7 @@ namespace MudBlazor.UnitTests.Components
             var button = comp.Find("button");
             await button.ParentElement.TriggerEventAsync("onmouseenter", new MouseEventArgs());
 
-            var popoverContentNode = comp.Find("#my-tooltip-content").ParentElement;
+            var popoverContentNode = comp.Find("#my-tooltip-content").ParentElement.ParentElement;
 
             popoverContentNode.ClassList.Should().Contain(expectedClasses);
         }
@@ -192,7 +205,7 @@ namespace MudBlazor.UnitTests.Components
             var button = comp.Find("button");
             await button.ParentElement.TriggerEventAsync("onmouseenter", new MouseEventArgs());
 
-            var popoverContentNode = comp.Find("#my-tooltip-content").ParentElement;
+            var popoverContentNode = comp.Find("#my-tooltip-content").ParentElement.ParentElement;
 
             popoverContentNode.ClassList.Should().Contain(expectedClasses);
         }
@@ -213,7 +226,7 @@ namespace MudBlazor.UnitTests.Components
             var button = comp.Find("button");
             await button.ParentElement.TriggerEventAsync("onmouseenter", new MouseEventArgs());
 
-            var popoverContentNode = comp.Find("#my-tooltip-content").ParentElement;
+            var popoverContentNode = comp.Find("#my-tooltip-content").ParentElement.ParentElement;
 
             popoverContentNode.ClassList.Should().Contain(expectedClasses);
         }
@@ -247,7 +260,7 @@ namespace MudBlazor.UnitTests.Components
             var button = comp.Find("button");
             await button.ParentElement.TriggerEventAsync("onmouseenter", new MouseEventArgs());
 
-            var popoverContentNode = comp.Find("#my-tooltip-content").ParentElement;
+            var popoverContentNode = comp.Find("#my-tooltip-content").ParentElement.ParentElement;
 
             popoverContentNode.ClassList.Should().Contain(expectedClasses);
         }
@@ -270,18 +283,18 @@ namespace MudBlazor.UnitTests.Components
         {
             var comp = Context.RenderComponent<TooltipClickTest>();
             var tooltipComp = comp.FindComponent<MudTooltip>().Instance;
-            tooltipComp.IsVisible.Should().BeFalse();
+            tooltipComp.Visible.Should().BeFalse();
             var button = comp.Find("button");
             await button.ParentElement.TriggerEventAsync("onmouseup", new MouseEventArgs());
 
             var popoverContentNode = comp.Find("#my-tooltip-content").ParentElement;
-            tooltipComp.IsVisible.Should().BeTrue();
+            tooltipComp.Visible.Should().BeTrue();
             popoverContentNode.Should().NotBeNull();
         }
 
         [Test]
         [TestCase(true)]
-        [TestCase(false)]        
+        [TestCase(false)]
         public async Task Visible_ByDefault(bool usingFocusout)
         {
             var comp = Context.RenderComponent<TooltipVisiblePropTest>(p =>
@@ -291,7 +304,7 @@ namespace MudBlazor.UnitTests.Components
             var tooltipComp = comp.FindComponent<MudTooltip>().Instance;
 
             comp.Instance.TooltipVisible.Should().BeTrue();
-            tooltipComp.IsVisible.Should().BeTrue(); //tooltip is visible by default in this case
+            tooltipComp.Visible.Should().BeTrue(); //tooltip is visible by default in this case
 
             var button = comp.Find("button");
 
@@ -304,7 +317,7 @@ namespace MudBlazor.UnitTests.Components
                 button.ParentElement.FocusOut();
             }
 
-            tooltipComp.IsVisible.Should().BeFalse();
+            tooltipComp.Visible.Should().BeFalse();
             comp.Instance.TooltipVisible.Should().BeFalse();
         }
 
@@ -317,6 +330,41 @@ namespace MudBlazor.UnitTests.Components
             await button.ParentElement.TriggerEventAsync("onmouseup", new MouseEventArgs());
 
             tooltipComp.Style.Should().Contain("background-color").And.Contain("orangered");
+        }
+
+
+        [Test]
+        public void Tooltip_Disabled_Default_False()
+        {
+            var comp = Context.RenderComponent<TooltipDisabledPropertyTest>();
+            var tooltipComp = comp.FindComponent<MudTooltip>().Instance;
+            tooltipComp.Disabled.Should().BeFalse();
+        }
+
+        [Test]
+        public async Task Tooltip_Disabled_Button_OnFocusIn_NoPopover()
+        {
+            var comp = Context.RenderComponent<TooltipDisabledPropertyTest>(p =>
+            {
+                p.Add(x => x.TooltipDisabled, true);
+            });
+
+            var button = comp.Find("button");
+            await button.ParentElement.TriggerEventAsync("onfocusin", new FocusEventArgs());
+            comp.FindAll("div.mud-popover-open").Count.Should().Be(0);
+        }
+
+        [Test]
+        public async Task Tooltip_Disabled_Button_OnMouseEnter_NoPopover()
+        {
+            var comp = Context.RenderComponent<TooltipDisabledPropertyTest>(p =>
+            {
+                p.Add(x => x.TooltipDisabled, true);
+            });
+
+            var button = comp.Find("button");
+            await button.ParentElement.TriggerEventAsync("onmouseenter", new MouseEventArgs());
+            comp.FindAll("div.mud-popover-open").Count.Should().Be(0);
         }
     }
 }

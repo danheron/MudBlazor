@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31423.177
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MudBlazor.SourceCodeGenerator", "MudBlazor.SourceCodeGenerator\MudBlazor.SourceCodeGenerator.csproj", "{CDE02174-96AB-4E97-AFA8-391C0FF98225}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MudBlazor", "MudBlazor\MudBlazor.csproj", "{FE5531F3-55F6-403D-BF48-3C904089B91D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MudBlazor.Docs.WasmHost", "MudBlazor.Docs.WasmHost\MudBlazor.Docs.WasmHost.csproj", "{C6E907FB-1958-44CE-A525-16E50EE8D199}"
@@ -10,8 +12,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MudBlazor.Docs.Wasm", "MudBlazor.Docs.Wasm\MudBlazor.Docs.Wasm.csproj", "{7EA59258-02F9-4DCF-AA93-37380DCB9904}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MudBlazor.Docs", "MudBlazor.Docs\MudBlazor.Docs.csproj", "{D90D463F-544F-47AF-8D19-617BB89D9A5F}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MudBlazor.UnitTests", "MudBlazor.UnitTests\MudBlazor.UnitTests.csproj", "{A550FD8B-1E2A-4D33-88A3-38DC0FC5C3BD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MudBlazor.UnitTests.Viewer", "MudBlazor.UnitTests.Viewer\MudBlazor.UnitTests.Viewer.csproj", "{B85F3580-C866-4900-BBCE-820CD9E91D24}"
 EndProject
@@ -33,6 +33,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CDE02174-96AB-4E97-AFA8-391C0FF98225}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CDE02174-96AB-4E97-AFA8-391C0FF98225}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CDE02174-96AB-4E97-AFA8-391C0FF98225}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CDE02174-96AB-4E97-AFA8-391C0FF98225}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FE5531F3-55F6-403D-BF48-3C904089B91D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FE5531F3-55F6-403D-BF48-3C904089B91D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE5531F3-55F6-403D-BF48-3C904089B91D}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -49,10 +53,6 @@ Global
 		{D90D463F-544F-47AF-8D19-617BB89D9A5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D90D463F-544F-47AF-8D19-617BB89D9A5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D90D463F-544F-47AF-8D19-617BB89D9A5F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A550FD8B-1E2A-4D33-88A3-38DC0FC5C3BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A550FD8B-1E2A-4D33-88A3-38DC0FC5C3BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A550FD8B-1E2A-4D33-88A3-38DC0FC5C3BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A550FD8B-1E2A-4D33-88A3-38DC0FC5C3BD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B85F3580-C866-4900-BBCE-820CD9E91D24}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B85F3580-C866-4900-BBCE-820CD9E91D24}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B85F3580-C866-4900-BBCE-820CD9E91D24}.Release|Any CPU.ActiveCfg = Release|Any CPU
