@@ -2,13 +2,13 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="ColorCode.HTML" Version="2.0.14" />
-    <PackageReference Include="MudBlazor" Version="6.1.9" />
-    <PackageReference Include="Heron.MudCalendar" Version="1.0.11" />
+    <PackageReference Include="MudBlazor" Version="7.0.0-preview.2" />
+    <PackageReference Include="Heron.MudCalendar" Version="2.0.0-beta.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,14 +21,9 @@
       <HintPath>..\..\..\Heron.MudCalendar\Heron.MudCalendar\bin\Debug\net8.0\Heron.MudCalendar.dll</HintPath>
     </Reference>
     <Reference Include="Heron.MudTotalCalendar">
-      <HintPath>..\..\..\Heron.MudTotalCalendar\Heron.MudTotalCalendar\bin\Debug\net7.0\Heron.MudTotalCalendar.dll</HintPath>
+      <HintPath>..\..\..\Heron.MudTotalCalendar\Heron.MudTotalCalendar\bin\Debug\net8.0\Heron.MudTotalCalendar.dll</HintPath>
+    </Reference>
     <PackageReference Include="ColorCode.HTML" Version="2.0.14" />
-    <PackageReference Include="MudBlazor" Version="6.1.9" />
-    <PackageReference Include="Heron.MudCalendar" Version="1.0.11" />
-      <HintPath>..\..\..\Heron.MudCalendar\Heron.MudCalendar\bin\Debug\net7.0\Heron.MudCalendar.dll</HintPath>
-    </Reference>
-    <Reference Include="Heron.MudTotalCalendar">
-      <HintPath>..\..\..\Heron.MudTotalCalendar\Heron.MudTotalCalendar\bin\Debug\net7.0\Heron.MudTotalCalendar.dll</HintPath>
-    </Reference>
+    <PackageReference Include="MudBlazor" Version="7.0.0-preview.2" />
   </ItemGroup>
 </Project>
