@@ -6,14 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ColorCode.HTML" Version="2.0.14" />
-    <PackageReference Include="MudBlazor" Version="7.0.0-preview.2" />
-    <PackageReference Include="Heron.MudCalendar" Version="2.0.0-beta.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="Heron.MudCalendar" />
-    <None Remove="MudBlazor" />
+    <PackageReference Include="ColorCode.HTML" Version="2.0.15" />
+    <PackageReference Include="MudBlazor" Version="7.0.0-preview.3" />
   </ItemGroup>
   
   <ItemGroup>
@@ -23,7 +17,5 @@
     <Reference Include="Heron.MudTotalCalendar">
       <HintPath>..\..\..\Heron.MudTotalCalendar\Heron.MudTotalCalendar\bin\Debug\net8.0\Heron.MudTotalCalendar.dll</HintPath>
     </Reference>
-    <PackageReference Include="ColorCode.HTML" Version="2.0.14" />
-    <PackageReference Include="MudBlazor" Version="7.0.0-preview.2" />
   </ItemGroup>
 </Project>
