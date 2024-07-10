@@ -7,20 +7,20 @@ using Microsoft.AspNetCore.Components;
 using Heron.MudCalendar;
 namespace MudBlazor.Docs.Compiler
 {
+    [Obsolete("This generator has been replaced by the ApiDocumentationBuilder class.")]
     public partial class DocStrings
     {
         private static string[] hiddenMethods = { "ToString", "GetType", "GetHashCode", "Equals", "SetParametersAsync", "ReferenceEquals" };
 
         public bool Execute()
         {
-            var paths = new Paths();
             var success = true;
             try
             {
                 var currentCode = string.Empty;
-                if (File.Exists(paths.DocStringsFilePath))
+                if (File.Exists(Paths.DocStringsFilePath))
                 {
-                    currentCode = File.ReadAllText(paths.DocStringsFilePath);
+                    currentCode = File.ReadAllText(Paths.DocStringsFilePath);
                 }
 
                 var cb = new CodeBuilder();
@@ -46,12 +46,12 @@ namespace MudBlazor.Docs.Compiler
 
                 if (currentCode != cb.ToString())
                 {
-                    File.WriteAllText(paths.DocStringsFilePath, cb.ToString());
+                    File.WriteAllText(Paths.DocStringsFilePath, cb.ToString());
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error generating {paths.DocStringsFilePath} : {e.Message}");
+                Console.WriteLine($"Error generating {Paths.DocStringsFilePath} : {e.Message}");
                 success = false;
             }
 

@@ -17,7 +17,7 @@ namespace MudBlazor.Docs.Components
     public partial class DocsPage : ComponentBase
     {
         [Parameter] public bool DisplayFooter { get; set; }
-        
+
         private Queue<DocsSectionLink> _bufferedSections = new();
         private MudPageContentNavigation _contentNavigation;
         private NavigationFooterLink _previous;
@@ -38,7 +38,7 @@ namespace MudBlazor.Docs.Components
         public event Action<Stopwatch> Rendered;
         private Dictionary<DocsPageSection, MudPageContentSection> _sectionMapper = new();
 
-        int _sectionCount;
+        private int _sectionCount;
 
         public int SectionCount
         {
@@ -60,7 +60,7 @@ namespace MudBlazor.Docs.Components
             base.OnInitialized();
             RenderQueue.Clear();
             var relativePath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
-            if (relativePath.Contains("#"))
+            if (relativePath.Contains('#'))
             {
                 var anchors = relativePath.Split(new[] { "#" }, StringSplitOptions.RemoveEmptyEntries);
                 _anchor = anchors.Count() > 1 ? anchors[1] : anchors[0];

@@ -15,6 +15,7 @@ using Bunit;
 using FluentAssertions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using MudBlazor.UnitTests.Dummy;
 using MudBlazor.UnitTests.TestComponents;
 using NUnit.Framework;
 using static Bunit.ComponentParameterFactory;
@@ -369,7 +370,7 @@ namespace MudBlazor.UnitTests.Components
             var autocomplete = autocompletecomp.Instance;
             await comp.InvokeAsync(() => autocomplete.DebounceInterval = 0);
             // Set invalid option
-            await comp.InvokeAsync(() => autocomplete.SelectOption("Quux"));
+            await comp.InvokeAsync(() => autocomplete.SelectOptionAsync("Quux"));
             // check initial state
             autocomplete.Value.Should().Be("Quux");
             autocomplete.Text.Should().Be("Quux");
@@ -388,7 +389,7 @@ namespace MudBlazor.UnitTests.Components
             var autocomplete = autocompletecomp.Instance;
             await comp.InvokeAsync(() => autocomplete.DebounceInterval = 0);
             // Set valid option
-            await comp.InvokeAsync(() => autocomplete.SelectOption("Qux"));
+            await comp.InvokeAsync(() => autocomplete.SelectOptionAsync("Qux"));
             // check initial state
             autocomplete.Value.Should().Be("Qux");
             autocomplete.Text.Should().Be("Qux");
@@ -524,7 +525,7 @@ namespace MudBlazor.UnitTests.Components
 
             // ToggleMenu to open menu and Clear to close it and check the text and value
             await comp.InvokeAsync(autocomplete.ToggleMenuAsync);
-            await comp.InvokeAsync(() => autocomplete.Clear().Wait());
+            await comp.InvokeAsync(() => autocomplete.ClearAsync().Wait());
             comp.Markup.Should().NotContain("mud-popover-open");
             autocomplete.Value.Should().Be(null);
             autocomplete.Text.Should().Be("");
@@ -537,7 +538,7 @@ namespace MudBlazor.UnitTests.Components
             items.First().Markup.Should().Contain("California");
 
             // Clearing it and check the close status text and value again
-            await comp.InvokeAsync(() => autocomplete.Clear().Wait());
+            await comp.InvokeAsync(() => autocomplete.ClearAsync().Wait());
             comp.WaitForAssertion(() => comp.Find("div.mud-popover").ClassList.Should().NotContain("mud-popover-open"));
             autocomplete.Value.Should().Be(null);
             autocomplete.Text.Should().Be("");
@@ -562,7 +563,7 @@ namespace MudBlazor.UnitTests.Components
             var autocompleteComponent = component.FindComponent<MudAutocomplete<string>>();
 
             // Set the clear function on value changed
-            autocompleteComponent.SetCallback(x => x.ValueChanged, async x => await autocompleteComponent.Instance.Clear());
+            autocompleteComponent.SetCallback(x => x.ValueChanged, async x => await autocompleteComponent.Instance.ClearAsync());
 
             // get the instance
             var autocompleteInstance = autocompleteComponent.Instance;
@@ -795,7 +796,7 @@ namespace MudBlazor.UnitTests.Components
                 autocomplete.CoerceText = true;
                 await comp.InvokeAsync(() => autocompletecomp.Find("input").KeyUpAsync(new KeyboardEventArgs() { Key = "Enter" }));
                 comp.WaitForAssertion(() => autocomplete.Open.Should().BeTrue());
-                await comp.InvokeAsync(() => autocomplete.OnEnterKey());
+                await comp.InvokeAsync(() => autocomplete.OnEnterKeyAsync());
                 autocompletecomp.Find("input").Input("abc");
                 await comp.InvokeAsync(async () => await autocomplete.SelectAsync());
                 await comp.InvokeAsync(async () => await autocomplete.SelectRangeAsync(0, 1));
@@ -803,7 +804,7 @@ namespace MudBlazor.UnitTests.Components
                 await comp.InvokeAsync(() => autocomplete.ToggleMenuAsync());
                 comp.WaitForAssertion(() => autocomplete.Open.Should().BeTrue());
 
-                await comp.InvokeAsync(() => autocomplete.OnEnterKey());
+                await comp.InvokeAsync(() => autocomplete.OnEnterKeyAsync());
                 comp.WaitForAssertion(() => autocomplete.Open.Should().BeFalse());
             });
         }
@@ -1451,5 +1452,94 @@ namespace MudBlazor.UnitTests.Components
             // American Samoa should have the ItemSelectedTemplate applied "American Samoa Selected State"
             items[2].Markup.Should().Contain("American Samoa Selected State");
         }
+
+        [Test]
+        public void Should_render_conversion_error_message()
+        {
+            var comp = Context.RenderComponent<MudAutocomplete<int>>(parameters => parameters
+                .Add(p => p.ErrorId, "error-id")
+                .Add(p => p.Text, "not a number")
+                .Add(p => p.Converter, new DummyErrorConverter()));
+
+            comp.Instance.ConversionErrorMessage.Should().NotBeNullOrEmpty();
+            comp.Find("#error-id").InnerHtml.Should().Be(comp.Instance.ConversionErrorMessage);
+        }
+
+        [TestCase(Adornment.Start)]
+        [TestCase(Adornment.End)]
+        public void Should_render_aria_label_for_adornment_if_provided(Adornment adornment)
+        {
+            var ariaLabel = "the aria label";
+            var comp = Context.RenderComponent<MudAutocomplete<string>>(parameters => parameters
+                .Add(p => p.Adornment, adornment)
+                .Add(p => p.AdornmentIcon, Icons.Material.Filled.Accessibility)
+                .Add(p => p.AdornmentAriaLabel, ariaLabel));
+
+            comp.Find(".mud-input-adornment-icon-button").Attributes.GetNamedItem("aria-label")!.Value.Should().Be(ariaLabel);
+        }
+
+#nullable enable
+        /// <summary>
+        /// Verifies that an autocomplete field with various configurations renders the expected <c>aria-describedby</c> attribute.
+        /// </summary>
+        // no helpers, validates error id is present when error is present
+        [TestCase(false, false)]
+        // with helper text, helper element should only be present when there is no error
+        [TestCase(false, true)]
+        // with user helper id, helper id should always be present
+        [TestCase(true, false)]
+        // with user helper id and helper text, should always favour user helper id
+        [TestCase(true, true)]
+        public void Should_pass_various_aria_describedby_tests(
+            bool withUserHelperId,
+            bool withHelperText)
+        {
+            var inputId = "input-id";
+            var helperId = withUserHelperId ? "user-helper-id" : null;
+            var helperText = withHelperText ? "helper text" : null;
+            var errorId = "error-id";
+            var errorText = "error text";
+            var inputSelector = "input";
+            var firstExpectedAriaDescribedBy = withUserHelperId
+                ? helperId
+                : withHelperText
+                    ? $"{inputId}-helper-text"
+                    : null;
+
+            var comp = Context.RenderComponent<MudAutocomplete<string>>(parameters => parameters
+                .Add(p => p.InputId, inputId)
+                .Add(p => p.HelperId, helperId)
+                .Add(p => p.HelperText, helperText)
+                .Add(p => p.Error, false)
+                .Add(p => p.ErrorId, errorId)
+                .Add(p => p.ErrorText, errorText));
+
+            // verify helper text is rendered
+            if (withUserHelperId is false && withHelperText)
+            {
+                var action = () => comp.Find($"#{inputId}-helper-text");
+                action.Should().NotThrow();
+            }
+
+            if (firstExpectedAriaDescribedBy is null)
+            {
+                comp.Find(inputSelector).HasAttribute("aria-describedby").Should().BeFalse();
+            }
+            else
+            {
+                comp.Find(inputSelector).GetAttribute("aria-describedby").Should().Be(firstExpectedAriaDescribedBy);
+            }
+
+            comp.SetParametersAndRender(parameters => parameters
+                .Add(p => p.Error, true));
+            var secondExpectedAriaDescribedBy = withUserHelperId ? $"{errorId} {helperId}" : errorId;
+
+            // verify error text is rendered
+            var errorAction = () => comp.Find($"#{errorId}");
+            errorAction.Should().NotThrow();
+
+            comp.Find(inputSelector).GetAttribute("aria-describedby").Should().Be(secondExpectedAriaDescribedBy);
+        }
+#nullable disable
     }
 }
