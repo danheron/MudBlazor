@@ -12,7 +12,7 @@ namespace MudBlazor
     {
         private bool _open;
         private string? _popoverStyle;
-        private bool _isMouseOver = false;
+        private bool _isPointerOver;
 
         protected string Classname =>
             new CssBuilder("mud-menu")
@@ -29,8 +29,11 @@ namespace MudBlazor
         public string? Label { get; set; }
 
         /// <summary>
-        /// Sets the aria-label of the menu button when <see cref="ActivatorContent"/> is not set.
+        /// The <c>aria-label</c> for the menu button when <see cref="ActivatorContent"/> is not set.
         /// </summary>
+        /// <remarks>
+        /// Defaults to <c>null</c>.
+        /// </remarks>
         [Parameter]
         [Category(CategoryTypes.Menu.Behavior)]
         public string? AriaLabel { get; set; }
@@ -212,7 +215,7 @@ namespace MudBlazor
         public Task CloseMenuAsync()
         {
             _open = false;
-            _isMouseOver = false;
+            _isPointerOver = false;
             _popoverStyle = null;
             StateHasChanged();
 
@@ -222,9 +225,10 @@ namespace MudBlazor
         /// <summary>
         /// Opens the menu.
         /// </summary>
-        /// <param name="args">The arguments of the calling mouse event. If
-        /// <see cref="PositionAtCursor"/> is true, the menu will be positioned using the
-        /// coordinates in this parameter.</param>
+        /// <param name="args">
+        /// The arguments of the calling mouse/pointer event.
+        /// If <see cref="PositionAtCursor"/> is true, the menu will be positioned using the coordinates in this parameter.
+        /// </param>
         public Task OpenMenuAsync(EventArgs args)
         {
             if (Disabled)
@@ -258,7 +262,6 @@ namespace MudBlazor
         /// <summary>
         /// Toggle the visibility of the menu.
         /// </summary>
-        /// <param name="args">Either <see cref="MouseEventArgs"/> or <see cref="TouchEventArgs"/></param>
         public async Task ToggleMenuAsync(EventArgs args)
         {
             if (Disabled)
@@ -290,9 +293,9 @@ namespace MudBlazor
             }
         }
 
-        private async Task MouseEnterAsync(MouseEventArgs args)
+        private async Task PointerEnterAsync(PointerEventArgs args)
         {
-            _isMouseOver = true;
+            _isPointerOver = true;
 
             if (ActivationEvent == MouseEvent.MouseOver)
             {
@@ -300,13 +303,13 @@ namespace MudBlazor
             }
         }
 
-        private async Task MouseLeaveAsync()
+        private async Task PointerLeaveAsync()
         {
-            _isMouseOver = false;
+            _isPointerOver = false;
 
             await Task.Delay(100);
 
-            if (ActivationEvent == MouseEvent.MouseOver && !_isMouseOver)
+            if (ActivationEvent == MouseEvent.MouseOver && !_isPointerOver)
             {
                 await CloseMenuAsync();
             }

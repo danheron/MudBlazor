@@ -4,16 +4,10 @@
   <OutputType>Exe</OutputType>
   <TargetFramework>net8.0</TargetFramework>
 </PropertyGroup>
-
+  
 <ItemGroup>
   <PackageReference Include="ColorCode.HTML" Version="2.0.15" />
-  <PackageReference Include="MudBlazor" Version="7.0.0-preview.3" />
-  <PackageReference Include="Heron.MudCalendar" Version="2.0.0-beta.3" />
-</ItemGroup>
-
-<ItemGroup>
-  <None Remove="Heron.MudCalendar" />
-  <None Remove="MudBlazor" />
+  <PackageReference Include="Heron.MudCalendar" Version="2.0.0" />
 </ItemGroup>
 
 <ItemGroup>
@@ -24,4 +18,9 @@
     <HintPath>..\..\..\Heron.MudTotalCalendar\Heron.MudTotalCalendar\bin\Debug\net8.0\Heron.MudTotalCalendar.dll</HintPath>
   </Reference>
 </ItemGroup>
+
+<ItemGroup>
+  <ProjectReference Include="..\MudBlazor\MudBlazor.csproj" />
+</ItemGroup>
+
 </Project>
