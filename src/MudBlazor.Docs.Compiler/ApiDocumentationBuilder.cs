@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Xml;
 using Heron.MudCalendar;
+using Heron.MudTotalCalendar;
 using Microsoft.AspNetCore.Components;
 using MudBlazor.Extensions;
 
@@ -218,6 +219,16 @@ public partial class ApiDocumentationBuilder()
         // Add MudCalendar public types
         assembly = typeof(MudCalendar).Assembly;
         var types = assembly.GetTypes().Where(type => type.IsPublic);
+        foreach (var type in types)
+        {
+            if (PublicTypes.ContainsKey(type.Name)) continue;
+            PublicTypes.Add(type.Name, type);
+            AddTypeToDocument(type);
+        }
+        
+        // Add MudTotalCalendar public types
+        assembly = typeof(MudTotalCalendar).Assembly;
+        types = assembly.GetTypes().Where(type => type.IsPublic);
         foreach (var type in types)
         {
             if (PublicTypes.ContainsKey(type.Name)) continue;
@@ -649,6 +660,7 @@ public partial class ApiDocumentationBuilder()
     {
         MergeXmlDocumentation(Assembly.Location.Replace(".dll", ".xml", StringComparison.OrdinalIgnoreCase));
         MergeXmlDocumentation(typeof(MudCalendar).Assembly.Location.Replace(".dll", ".xml", StringComparison.OrdinalIgnoreCase));
+        MergeXmlDocumentation(typeof(MudTotalCalendar).Assembly.Location.Replace(".dll", ".xml", StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
