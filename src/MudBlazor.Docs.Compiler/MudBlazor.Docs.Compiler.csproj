@@ -8,11 +8,6 @@
   <ItemGroup>
     <PackageReference Include="ColorCode.HTML" Version="2.0.15" />
   </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="Heron.MudCalendar" />
-    <None Remove="MudBlazor" />
-  </ItemGroup>
   
   <ItemGroup>
     <Reference Include="Heron.MudCalendar">
