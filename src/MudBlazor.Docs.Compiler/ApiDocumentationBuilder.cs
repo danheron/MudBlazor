@@ -10,7 +10,9 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Xml;
+using Heron.MudCalendar;
 using Microsoft.AspNetCore.Components;
+using MudBlazor.Extensions;
 
 namespace MudBlazor.Docs.Compiler;
 
@@ -206,10 +208,21 @@ public partial class ApiDocumentationBuilder()
     public void AddTypesToDocument()
     {
         // Get all MudBlazor public types
-        PublicTypes = new(Assembly.GetTypes().Where(type => type.IsPublic).ToDictionary(r => r.Name, v => v));
+        var assembly = typeof(MudText).Assembly;
+        PublicTypes = new(assembly.GetTypes().Where(type => type.IsPublic).ToDictionary(r => r.Name, v => v));
         foreach (var type in PublicTypes)
         {
             AddTypeToDocument(type.Value);
+        }
+        
+        // Add MudCalendar public types
+        assembly = typeof(MudCalendar).Assembly;
+        var types = assembly.GetTypes().Where(type => type.IsPublic);
+        foreach (var type in types)
+        {
+            if (PublicTypes.ContainsKey(type.Name)) continue;
+            PublicTypes.Add(type.Name, type);
+            AddTypeToDocument(type);
         }
     }
 
@@ -354,13 +367,14 @@ public partial class ApiDocumentationBuilder()
         // Look for public properties 
         var properties = type.GetProperties().ToList();
         // Add protected methods
-        properties.AddRange(type.GetProperties(BindingFlags.Instance | BindingFlags.NonPublic));
+        //properties.AddRange(type.GetProperties(BindingFlags.Instance | BindingFlags.NonPublic));
         // Remove duplicates
         properties = properties.DistinctBy(property => property.Name).ToList();
         // Go through each property
         foreach (var property in properties)
         {
             var category = property.GetCustomAttribute<CategoryAttribute>();
+            var calendarCategory = property.GetCustomAttribute<Heron.MudCalendar.Attributes.CategoryAttribute>();
             var blazorParameter = property.GetCustomAttribute<ParameterAttribute>();
             var key = GetPropertyFullName(property);
 
@@ -370,14 +384,14 @@ public partial class ApiDocumentationBuilder()
                 // No.
                 documentedProperty = new DocumentedProperty()
                 {
-                    Category = category?.Name,
+                    Category = category == null ? calendarCategory?.Name : category.Name,
                     DeclaringType = property.DeclaringType,
                     DeclaringTypeFullName = GetTypeFullName(property.DeclaringType),
                     IsProtected = property.GetMethod.IsFamily,
                     IsParameter = blazorParameter != null,
                     Key = key,
                     Name = property.Name,
-                    Order = category?.Order,
+                    Order = category?.Order ?? calendarCategory?.Order,
                     Type = property.PropertyType,
                     XmlKey = GetXmlKey(GetTypeFullName(property.DeclaringType), property.Name),
                 };
@@ -573,7 +587,7 @@ public partial class ApiDocumentationBuilder()
         // Look for public methods
         var methods = type.GetMethods().ToList();
         // Add protected methods
-        methods.AddRange(type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic));
+        //methods.AddRange(type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic));
         methods = methods
             // Remove duplicates
             .DistinctBy(method => method.Name)
@@ -630,15 +644,21 @@ public partial class ApiDocumentationBuilder()
             documentedType.Methods.Add(documentedMethod.Key, documentedMethod);
         }
     }
+    
+    public void MergeXmlDocumentation()
+    {
+        MergeXmlDocumentation(Assembly.Location.Replace(".dll", ".xml", StringComparison.OrdinalIgnoreCase));
+        MergeXmlDocumentation(typeof(MudCalendar).Assembly.Location.Replace(".dll", ".xml", StringComparison.OrdinalIgnoreCase));
+    }
 
     /// <summary>
     /// Merges XML documentation with existing documentation types.
     /// </summary>
     /// <exception cref="FileNotFoundException"></exception>
-    public void MergeXmlDocumentation()
+    public void MergeXmlDocumentation(string path)
     {
         // Open the XML documentation file
-        var path = Assembly.Location.Replace(".dll", ".xml", StringComparison.OrdinalIgnoreCase);
+        //var path = Assembly.Location.Replace(".dll", ".xml", StringComparison.OrdinalIgnoreCase);
         using var reader = new XmlTextReader(path);
         reader.WhitespaceHandling = WhitespaceHandling.None;
         reader.DtdProcessing = DtdProcessing.Ignore;
