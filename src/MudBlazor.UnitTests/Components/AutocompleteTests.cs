@@ -15,6 +15,7 @@ using Bunit;
 using FluentAssertions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using MudBlazor.Interfaces;
 using MudBlazor.UnitTests.Dummy;
 using MudBlazor.UnitTests.TestComponents;
 using NUnit.Framework;
@@ -94,6 +95,24 @@ namespace MudBlazor.UnitTests.Components
             var comp = Context.RenderComponent<AutocompleteTest3>();
             var autocomplete = comp.FindComponent<MudAutocomplete<AutocompleteTest3.State>>().Instance;
             autocomplete.Text.Should().Be("Assam");
+        }
+
+        /// <summary>
+        /// The autocomplete should stop loading data when it is disposed
+        /// </summary>
+        [Test]
+        public async Task AutocompleteCancelDisposeTest()
+        {
+            var comp = Context.RenderComponent<AutocompleteTest8>();
+            var autocompleteContainerComp = comp.FindComponent<AutoCompleteContainer>();
+            var autocompleteComp = autocompleteContainerComp.FindComponent<MudAutocomplete<string>>();
+            autocompleteComp.SetParam(a => a.Text, "Alabama");
+            await Task.Delay(500);
+            comp.Instance.mustBeShown = false;
+            await Task.Delay(500);
+            comp.Render();
+            await Task.Delay(500);
+            comp.Instance.HasBeenDisposed.Should().Be(true);
         }
 
         /// <summary>
@@ -1295,14 +1314,39 @@ namespace MudBlazor.UnitTests.Components
         }
 
         [Test]
-        public async Task Autocomplete_Should_OpenMenuOnFocus()
+        [TestCase(true)]
+        [TestCase(false)]
+        public async Task Autocomplete_Should_OpenMenuOnFocus(bool openOnFocus)
         {
-            var comp = Context.RenderComponent<AutocompleteTest1>();
+            var comp = Context.RenderComponent<AutocompleteFocusTest>();
+            comp.SetParam(a => a.OpenOnFocus, openOnFocus);
 
             comp.WaitForAssertion(() => comp.Find("div.mud-popover").ClassList.Should().NotContain("mud-popover-open"));
 
             comp.Find("input.mud-input-root").Focus();
 
+            if (openOnFocus)
+            {
+                comp.WaitForAssertion(() => comp.Find("div.mud-popover").ClassList.Should().Contain("mud-popover-open"));
+            }
+            else
+            {
+                comp.WaitForAssertion(() => comp.Find("div.mud-popover").ClassList.Should().NotContain("mud-popover-open"));
+            }
+        }
+
+        [Test]
+        public async Task Autocomplete_Should_OpenMenuOnFocus_AlwaysOnClick()
+        {
+            var comp = Context.RenderComponent<AutocompleteFocusTest>();
+            comp.SetParam(a => a.OpenOnFocus, false);
+
+            comp.Find("input.mud-input-root").Focus(); // Browser would focus first.
+            comp.WaitForAssertion(() => comp.Find("div.mud-popover").ClassList.Should().NotContain("mud-popover-open"));
+
+            comp.Find("input.mud-input-root").Click();
+
+            // OpenOnFocus=false isn't respected by clicks. It added after the fact to allow opting in to v6 behavior.
             comp.WaitForAssertion(() => comp.Find("div.mud-popover").ClassList.Should().Contain("mud-popover-open"));
         }
 
@@ -1541,5 +1585,45 @@ namespace MudBlazor.UnitTests.Components
             comp.Find(inputSelector).GetAttribute("aria-describedby").Should().Be(secondExpectedAriaDescribedBy);
         }
 #nullable disable
+
+        public void Autocomplete_Attribute_Should_Exist()
+        {
+            var comp = Context.RenderComponent<MudAutocomplete<string>>();
+
+            comp.Find("input.mud-input-root").GetAttribute("autocomplete").Should().Be("off");
+        }
+
+        public void Should_Override_Autocomplete_Attribute_With_UserAttributes()
+        {
+            var comp = Context.RenderComponent<MudAutocomplete<string>>(parameters => parameters
+                .Add(p => p.UserAttributes, new() { ["autocomplete"] = "on" }));
+
+            comp.Find("input.mud-input-root").GetAttribute("autocomplete").Should().Be("on");
+        }
+
+        /// <summary>
+        /// https://github.com/MudBlazor/MudBlazor/issues/9495
+        /// With `ResetValueOnEmptyText`,
+        /// when the input text is cleared,
+        /// then the value is set to null and the search func is called
+        /// </summary>
+        [Test]
+        public void ResetValueOnEmptyText_WhenTextCleared_ThenSetNullAndTriggerSearch()
+        {
+            // Arrange
+
+            var comp = Context.RenderComponent<AutocompleteResetValueOnEmptyText>();
+            var autocompletecomp = comp.FindComponent<MudAutocomplete<string>>();
+            var autocomplete = autocompletecomp.Instance;
+
+            // Act
+
+            autocompletecomp.Find("input").Input("");
+
+            // Assert
+
+            autocomplete.Value.Should().Be(null);
+            comp.WaitForAssertion(() => comp.Instance.SearchCount.Should().Be(1));
+        }
     }
 }
