@@ -1,8 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿// Copyright (c) MudBlazor 2021
+// MudBlazor licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using MudBlazor.Charts;
 using MudBlazor.Docs.Models;
+
 
 namespace MudBlazor.Docs.Services
 {
@@ -42,7 +44,7 @@ namespace MudBlazor.Docs.Services
             .AddItem("Nav Menu", typeof(MudNavMenu), typeof(MudNavLink), typeof(MudNavGroup))
             .AddItem("Tabs", typeof(MudTabs), typeof(MudTabPanel), typeof(MudDynamicTabs))
             .AddItem("Progress", typeof(MudProgressCircular), typeof(MudProgressLinear))
-            .AddItem("Dialog", typeof(MudDialog), typeof(MudDialogInstance), typeof(MudDialogProvider))
+            .AddItem("Dialog", typeof(MudDialog), typeof(MudDialogContainer), typeof(MudDialogProvider))
             .AddItem("Snackbar", typeof(MudSnackbarProvider))
             .AddItem("Avatar", typeof(MudAvatar), typeof(MudAvatarGroup))
             .AddItem("Alert", typeof(MudAlert))
@@ -76,6 +78,7 @@ namespace MudBlazor.Docs.Services
             .AddItem("Stack", typeof(MudStack))
             .AddItem("Spacer", typeof(MudSpacer))
             .AddItem("Collapse", typeof(MudCollapse))
+            .AddItem("Stepper", typeof(MudStepper), typeof(MudStep))
 
             //GROUPS
 
@@ -119,6 +122,7 @@ namespace MudBlazor.Docs.Services
                 .AddItem("Line Chart", typeof(Line))
                 .AddItem("Pie Chart", typeof(Pie))
                 .AddItem("Bar Chart", typeof(Bar))
+                .AddItem("Heat Map Chart", typeof(HeatMap))
                 .AddItem("Stacked Bar Chart", typeof(StackedBar))
                 .AddItem("Time Series Chart", typeof(TimeSeries))
             )
@@ -146,13 +150,14 @@ namespace MudBlazor.Docs.Services
         /// </summary>
         public IEnumerable<DocsLink> Customization => _customization ??= new List<DocsLink>
         {
-            new DocsLink {Title="Default theme", Href="customization/default-theme"},
+            new DocsLink {Title = "Default theme", Href="customization/default-theme"},
             new DocsLink {Title = "Overview", Href = "customization/overview"},
             new DocsLink {Title = "Palette", Href = "customization/palette"},
             new DocsLink {Title = "Typography", Href = "customization/typography"},
             new DocsLink {Title = "z-index", Href = "customization/z-index"},
             new DocsLink {Title = "Pseudo CSS", Href = "customization/pseudocss"},
-        }.OrderBy(x => x.Title);
+            new DocsLink {Title = "Globals", Href="customization/globals", Order = 100},
+        }.OrderBy(link => link.Order).ThenBy(x => x.Title);
 
         /// <summary>
         /// CSS Utilities menu links
@@ -239,6 +244,30 @@ namespace MudBlazor.Docs.Services
             return _componentLookup.TryGetValue(type, out var component)
                 ? component
                 : _parents.GetValueOrDefault(type);
+        }
+
+        /// <inheritdoc />
+        public string? GetComponentName(string typeName)
+        {
+            var cleanName = typeName.Replace("`1", "<T>").Replace("`2", "<T, U>");
+            foreach (var component in _docsComponents)
+            {
+                if (component.ComponentName != null && component.ComponentName.Equals(cleanName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return component.Name;
+                }
+                if (component.GroupComponents != null)
+                {
+                    foreach (var groupComponent in component.GroupComponents)
+                    {
+                        if (groupComponent.ComponentName.Equals(cleanName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return groupComponent.Name;
+                        }
+                    }
+                }
+            }
+            return null;
         }
 
         /// <summary>

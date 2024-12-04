@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MudBlazor.UnitTests.Mocks;
 using MudBlazor.UnitTests.TestComponents;
+using MudBlazor.UnitTests.TestComponents.ToggleGroup;
 using NUnit.Framework;
 
 namespace MudBlazor.UnitTests.Components
@@ -104,6 +105,19 @@ namespace MudBlazor.UnitTests.Components
         }
 
         [Test]
+        public void ToggleGroup_ToggleRemove_Test()
+        {
+            var comp = Context.RenderComponent<ToggleGroupRemoveTest>();
+            var toggle = comp.FindComponent<MudToggleGroup<string>>();
+            var toggleGroup = toggle.Instance;
+            IElement Button() => comp.Find("#remove_btn");
+
+            toggleGroup.GetItems().Count().Should().Be(8);
+            Button().Click();
+            toggleGroup.GetItems().Count().Should().Be(7);
+        }
+
+        [Test]
         [TestCase(Size.Small)]
         [TestCase(Size.Medium)]
         [TestCase(Size.Large)]
@@ -137,7 +151,7 @@ namespace MudBlazor.UnitTests.Components
             }
         }
 
-        [Test]
+        [Test(Description = "Ensures the checkmark is a direct descendant of the button label, is using the right name, and correctly contains a custom class definition")]
         public void ToggleGroup_CheckMarkClass()
         {
             var comp = Context.RenderComponent<MudToggleGroup<string>>(builder =>
@@ -147,7 +161,7 @@ namespace MudBlazor.UnitTests.Components
                 builder.AddChildContent<MudToggleItem<string>>(item => item.Add(x => x.Value, "a").Add(x => x.UnselectedIcon, @Icons.Material.Filled.Coronavirus));
             });
 
-            comp.Find(".mud-button-label > span").ClassList.Should().Contain("c69");
+            comp.Find(".mud-button-label > .mud-toggle-item-check-icon").ClassList.Should().Contain("c69");
         }
 
         [Test]

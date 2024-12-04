@@ -1,13 +1,12 @@
-﻿using System.IO;
-using System.Linq;
-
-namespace MudBlazor.Docs.Compiler
+﻿namespace MudBlazor.Docs.Compiler
 {
+#nullable enable
     public static class Paths
     {
         private const string DocsDirectory = "MudBlazor.Docs";
         private const string CalendarDocsDirectory = "../../Heron.MudCalendar/Heron.MudCalendar.Docs";
         private const string TestDirectory = "MudBlazor.UnitTests";
+        private const string TestDirectory = "MudBlazor.UnitTests.Docs";
         private const string SnippetsFile = "Snippets.generated.cs";
         private const string ApiDocumentationFile = "ApiDocumentation.generated.cs";
         private const string DocStringsFile = "DocStrings.generated.cs";
@@ -28,11 +27,11 @@ namespace MudBlazor.Docs.Compiler
                 }
                 while (Path.GetFileName(workingPath) != "src" && !string.IsNullOrWhiteSpace(workingPath));
 
-                return workingPath;
+                return workingPath!;
             }
         }
 
-        public static string DocsDirPath => Directory.EnumerateDirectories(SrcDirPath, DocsDirectory).FirstOrDefault();
+        public static string? DocsDirPath => Directory.EnumerateDirectories(SrcDirPath, DocsDirectory).FirstOrDefault();
 
         public static string TestDirPath => Path.Join(Directory.EnumerateDirectories(SrcDirPath, TestDirectory).FirstOrDefault(), "Generated");
 

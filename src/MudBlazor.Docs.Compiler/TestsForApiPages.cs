@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace MudBlazor.Docs.Compiler
 {
@@ -12,7 +8,7 @@ namespace MudBlazor.Docs.Compiler
         /// <summary>
         /// The current production links to API documentation.
         /// </summary>
-        public string[] LegacyApiAddresses = [
+        private readonly string[] _legacyApiAddresses = [
             // available from the main menu in "API" group
             "api/alert",
             "api/appbar",
@@ -150,18 +146,15 @@ namespace MudBlazor.Docs.Compiler
                 var cb = new CodeBuilder();
 
                 cb.AddHeader();
-                cb.AddLine("using System.Linq;");
-                cb.AddLine("using System.Threading.Tasks;");
                 cb.AddLine("using Bunit;");
                 cb.AddLine("using FluentAssertions;");
                 cb.AddLine("using Microsoft.AspNetCore.Components;");
                 cb.AddLine("using Microsoft.Extensions.DependencyInjection;");
                 cb.AddLine("using MudBlazor.Docs.Pages.Api;");
                 cb.AddLine("using MudBlazor.Docs.Services;");
-                cb.AddLine("using MudBlazor.UnitTests.Mocks;");
                 cb.AddLine("using NUnit.Framework;");
                 cb.AddLine();
-                cb.AddLine("namespace MudBlazor.UnitTests.Components");
+                cb.AddLine("namespace MudBlazor.UnitTests.Docs.Generated");
                 cb.AddLine("{");
                 cb.IndentLevel++;
                 cb.AddLine("// These tests just check all the API pages to see if they throw any exceptions");
@@ -197,14 +190,22 @@ namespace MudBlazor.Docs.Compiler
         /// </summary>
         public void WritePublicTypeTests(CodeBuilder cb)
         {
-            var mudBlazorComponents = typeof(_Imports).Assembly.GetTypes().Where(type => type.IsPublic);
+            var mudBlazorAssembly = typeof(_Imports).Assembly;
+            var mudBlazorComponents = mudBlazorAssembly.GetTypes()
+                .Where(type =>
+                    // Include public types
+                    type.IsPublic
+                    // ... which aren't excluded
+                    && !ApiDocumentationBuilder.IsExcluded(type)
+                    // ... which aren't interfaces
+                    && !type.IsInterface
+                    // ... which aren't source generators
+                    && !type.Name.Contains("SourceGenerator")
+                    // ... which aren't extension classes
+                    && !type.Name.Contains("Extensions"))
+                .ToList();
             foreach (var type in mudBlazorComponents)
             {
-                if (ApiDocumentationBuilder.IsExcluded(type))
-                {
-                    continue;
-                }
-
                 // Skip MudBlazor.Color and MudBlazor.Input types
                 if (type.Name == "Color" || type.Name == "Input")
                 {
@@ -238,7 +239,7 @@ namespace MudBlazor.Docs.Compiler
         /// </summary>
         public void WriteLegacyApiLinkTests(CodeBuilder cb)
         {
-            foreach (var url in LegacyApiAddresses)
+            foreach (var url in _legacyApiAddresses)
             {
                 var component = url.Replace("api/", "");
 

@@ -1,11 +1,13 @@
-﻿using System;
+﻿// Copyright (c) MudBlazor 2021
+// MudBlazor licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using AngleSharp.Dom;
 using Bunit;
 using FluentAssertions;
 using Microsoft.AspNetCore.Components.Web;
-using MudBlazor.UnitTests.TestComponents;
+using MudBlazor.UnitTests.TestComponents.Menu;
 using NUnit.Framework;
 
 namespace MudBlazor.UnitTests.Components
@@ -405,9 +407,7 @@ namespace MudBlazor.UnitTests.Components
 
         [Test]
         [TestCase("x", null, null)]
-        [TestCase(null, "Close menu", "Close menu")]
         [TestCase("x", "Close menu", "Close menu")]
-        [TestCase(null, null, null, Description = "Ensures aria-label is not present instead of empty string")]
         public void MenuWithLabelAndAriaLabel_Should_HaveExpectedAriaLabel(string label, string ariaLabel, string expectedAriaLabel)
         {
             var comp = Context.RenderComponent<MenuAccessibilityTest>(parameters => parameters
@@ -424,9 +424,185 @@ namespace MudBlazor.UnitTests.Components
         {
             var comp = Context.RenderComponent<MenuAccessibilityTest>(parameters => parameters
                 .Add(p => p.Icon, Icons.Material.Filled.Accessibility)
+                .Add(p => p.Label, "Accessibility")
                 .Add(p => p.AriaLabel, ariaLabel));
 
             comp.Find("button").GetAttribute("aria-label").Should().Be(expectedAriaLabel);
+        }
+
+        [Test]
+        public async Task MultiNest_MenuPointerLeave_MenuPointerEnter_Closing()
+        {
+            var comp = Context.RenderComponent<MenuTestNestWithMouseOver>();
+            // open all sub menus
+            var mudMenus = comp.FindComponents<MudMenu>();
+            var menu = mudMenus[0].WaitForElement(".mud-menu");
+            comp.WaitForAssertion(() => mudMenus.Count.Should().Be(1));
+            await menu.TriggerEventAsync("onpointerenter", new PointerEventArgs());
+            comp.WaitForAssertion(() => mudMenus[0].Instance.Open.Should().BeTrue());
+            mudMenus = comp.FindComponents<MudMenu>();
+            comp.WaitForAssertion(() => mudMenus.Count.Should().Be(2));
+            menu = mudMenus[0].WaitForElement(".mud-menu");
+            await menu.TriggerEventAsync("onpointerenter", new PointerEventArgs());
+            comp.WaitForAssertion(() => mudMenus[0].Instance.Open.Should().BeTrue());
+            mudMenus = comp.FindComponents<MudMenu>();
+            comp.WaitForAssertion(() => mudMenus.Count.Should().Be(3));
+            menu = mudMenus[1].WaitForElement(".mud-menu");
+            await menu.TriggerEventAsync("onpointerenter", new PointerEventArgs());
+            await menu.TriggerEventAsync("onpointermove", new PointerEventArgs());
+            comp.WaitForAssertion(() => mudMenus[1].Instance.Open.Should().BeTrue());
+
+            // try to keep mouse enter
+            var cancellationTokenSource = new CancellationTokenSource();
+            var token = cancellationTokenSource.Token;
+
+            _ = Task.Run(async () =>
+            {
+                var menuItem = mudMenus[2].Find(".mud-menu");
+                while (!token.IsCancellationRequested)
+                {
+                    await menuItem.TriggerEventAsync("onpointermove", new PointerEventArgs());
+                    await Task.Delay(35, token);
+                }
+            }, token);
+            await Task.Delay(10, CancellationToken.None);
+            // click menu item
+            // all opened menu should be close
+            _ = mudMenus[1].InvokeAsync(() => mudMenus[1].Instance.CloseMenuAsync());
+            _ = cancellationTokenSource.CancelAsync();
+            await Task.Delay(200, CancellationToken.None);
+            mudMenus = comp.FindComponents<MudMenu>();
+            comp.WaitForAssertion(() => mudMenus.Count.Should().Be(1));
+            comp.WaitForAssertion(() => mudMenus[0].Instance.Open.Should().BeFalse());
+        }
+
+        [Test]
+        public async Task MultiNest_MenuPointerLeave_OpenNextSubMenuClosePreviousSubMenu()
+        {
+            var comp = Context.RenderComponent<MenuTestNestWithQuicklyMouseMove>();
+            // open all sub menus
+            var mudMenus = comp.FindComponents<MudMenu>();
+            var menu = mudMenus[0].WaitForElement(".mud-menu");
+            comp.WaitForAssertion(() => mudMenus.Count.Should().Be(1));
+            await menu.TriggerEventAsync("onpointerenter", new PointerEventArgs());
+            comp.WaitForAssertion(() => mudMenus[0].Instance.Open.Should().BeTrue());
+            mudMenus = comp.FindComponents<MudMenu>();
+            comp.WaitForAssertion(() => mudMenus.Count.Should().Be(11));
+            var menuA = mudMenus[0].WaitForElement(".mud-menu");
+            var menuB = mudMenus[1].WaitForElement(".mud-menu");
+            await menuA.TriggerEventAsync("onpointerenter", new PointerEventArgs());
+            _ = menuA.TriggerEventAsync("onpointerleave", new PointerEventArgs());
+            _ = menuB.TriggerEventAsync("onpointerenter", new PointerEventArgs());
+        }
+
+        [Test]
+        public async Task MultiNest_MenuPointerLeave_MenuPointerEnter_CheckOpenClose()
+        {
+            var comp = Context.RenderComponent<MenuTestNestWithMouseOver>();
+            // open all sub menus
+            var mudMenus = comp.FindComponents<MudMenu>();
+            var menu = mudMenus[0].WaitForElement(".mud-menu");
+            comp.WaitForAssertion(() => mudMenus.Count.Should().Be(1));
+            await menu.TriggerEventAsync("onpointerenter", new PointerEventArgs());
+            comp.WaitForAssertion(() => mudMenus[0].Instance.Open.Should().BeTrue());
+            mudMenus = comp.FindComponents<MudMenu>();
+            comp.WaitForAssertion(() => mudMenus.Count.Should().Be(2));
+            menu = mudMenus[0].WaitForElement(".mud-menu");
+            await menu.TriggerEventAsync("onpointerenter", new PointerEventArgs());
+            comp.WaitForAssertion(() => mudMenus[0].Instance.Open.Should().BeTrue());
+            mudMenus = comp.FindComponents<MudMenu>();
+            comp.WaitForAssertion(() => mudMenus.Count.Should().Be(3));
+            menu = mudMenus[1].WaitForElement(".mud-menu");
+            await menu.TriggerEventAsync("onpointerenter", new PointerEventArgs());
+            comp.WaitForAssertion(() => mudMenus[1].Instance.Open.Should().BeTrue());
+
+            mudMenus = comp.FindComponents<MudMenu>();
+
+            // keep the first menu open
+            var cancellationTokenSource = new CancellationTokenSource();
+            var token = cancellationTokenSource.Token;
+            _ = Task.Run(async () =>
+            {
+                var menuItem = mudMenus[2].Find(".mud-menu");
+                while (!token.IsCancellationRequested)
+                {
+                    await menuItem.TriggerEventAsync("onpointermove", new PointerEventArgs());
+                    await Task.Delay(10, token);
+                }
+            }, token);
+            // leave last sub menu , and then parent menu open will be false
+            // but the first menu should still be open
+            menu = mudMenus[1].WaitForElement(".mud-menu");
+            await menu.TriggerEventAsync("onpointerleave", new PointerEventArgs());
+            await Task.Delay(100, CancellationToken.None);
+            mudMenus = comp.FindComponents<MudMenu>();
+            comp.WaitForAssertion(() => mudMenus.Count.Should().Be(2));
+            comp.WaitForAssertion(() => mudMenus[0].Instance.Open.Should().BeFalse());
+            comp.WaitForAssertion(() => mudMenus[1].Instance.Open.Should().BeTrue());
+            await cancellationTokenSource.CancelAsync();
+        }
+
+        [Test]
+        public async Task OpenMenuAsync_Should_Set_FixedPosition()
+        {
+            // Arrange
+            var comp = Context.RenderComponent<MenuPositionAtCursorTest>();
+            var menuComponent = comp.FindComponent<MudMenu>();
+            var mudMenuContext = menuComponent.Instance;
+            mudMenuContext.Should().NotBeNull();
+
+            // Act
+            await Context.Renderer.Dispatcher.InvokeAsync(() => mudMenuContext.OpenMenuAsync(new MouseEventArgs()));
+
+            // find popover element
+            var popover = comp.Find("div.mud-popover");
+
+            // Assert
+            popover.ClassList.Should().Contain("mud-popover-anchor-top-left");
+            popover.ClassList.Should().Contain("mud-popover-position-override");
+
+            popover.OuterHtml.Contains("top: 0px; left: 0px;").Should().BeTrue();
+
+            await Context.Renderer.Dispatcher.InvokeAsync(mudMenuContext.CloseMenuAsync);
+        }
+
+        [Test]
+        public void ContextMenu_Should_NotHaveButton_And_NotBeVisible()
+        {
+            // Arrange
+            var comp = Context.RenderComponent<ContextMenuTest>();
+            var menuComponent = comp.FindComponent<MudMenu>();
+
+            // Assert
+            comp.FindAll("button.mud-button-root").Count.Should().Be(0);
+            menuComponent.Find("div.mud-menu").ClassList.Should().Contain("mud-menu-button-hidden");
+        }
+
+        [Test]
+        public void ContextMenu_WithLabel_Sould_HaveButton_And_BeVisible()
+        {
+            // Arrange
+            var comp = Context.RenderComponent<ContextMenuTest>(parameters
+                => parameters.Add(p => p.Label, "Context Menu"));
+            var menuComponent = comp.FindComponent<MudMenu>();
+
+            // Assert
+            menuComponent.FindAll("button").Count.Should().Be(1);
+            menuComponent.Find("div.mud-menu").ClassList.Should().NotContain("mud-menu-button-hidden");
+        }
+
+        [Test]
+        public void ContextMenu_WithActivatorContent_Sould_HaveActivatorContent_And_BeVisible()
+        {
+            // Arrange
+            var comp = Context.RenderComponent<ContextMenuTest>(parameters
+                => parameters.Add(p => p.ActivatorContent, "<div id=\"custom-activator\">Custom Activator Content</div>"));
+            var menuComponent = comp.FindComponent<MudMenu>();
+
+            // Assert
+            menuComponent.FindAll("button").Count.Should().Be(0);
+            menuComponent.Find("div.mud-menu").ClassList.Should().NotContain("mud-menu-button-hidden");
+            menuComponent.Find("div#custom-activator").TextContent.Should().Be("Custom Activator Content");
         }
     }
 }

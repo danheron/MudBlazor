@@ -5,7 +5,7 @@
 @page "/components/MudDataGridPager`1"
 
 <DocsPage>
-    <DocsPageHeader Title="DataGrid" SubTitle="A sortable, filterable data grid with multiselection and pagination"/>
+    <DocsPageHeader Title="DataGrid" Component="@nameof(MudDataGrid<T>)" />
     <DocsPageContent>
 
         <DocsPageSection>
@@ -346,5 +346,32 @@
                 <DataGridColumnsPanelExample />
             </SectionContent>
         </DocsPageSection>
+
+        <DocsPageSection>
+            <SectionHeader Title="Context Menu">
+                <Description>
+                    A context menu can be added to increase the flexibility and efficiency that the <CodeInline>&lt;MudDataGrid></CodeInline> offers.
+                    There are several scenarios where a context menu can be beneficial such as performing row level actions,
+                    accessing additional information, or just providing a more intuitive user experience.
+                </Description>
+            </SectionHeader>
+            <SectionContent DarkenBackground="true" Code="@nameof(DataGridContextMenuExample)" ShowCode="false" Block="true" FullWidth="true">
+                <DataGridContextMenuExample />
+            </SectionContent>
+        </DocsPageSection>
+
+        <DocsPageSection>
+            <SectionHeader Title="Validator">
+                <Description>
+                    When a <CodeInline>&lt;MudDataGrid></CodeInline> is used as part of a <CodeInline>MudForm</CodeInline> you might want to
+                    bind the <CodeInline>Validator</CodeInline> property to the outer <CodeInline>MudForm</CodeInline> so that validation
+                    and <CodeInline>IsTouched</CodeInline> states are reflected in/propagated to the outer <CodeInline>MudForm</CodeInline>.
+                </Description>
+            </SectionHeader>
+            <SectionContent DarkenBackground="true" Code="@nameof(DataGridValidatorExample)" ShowCode="false" Block="true" FullWidth="true">
+                <DataGridValidatorExample />
+            </SectionContent>
+        </DocsPageSection>
+
     </DocsPageContent>
 </DocsPage>
