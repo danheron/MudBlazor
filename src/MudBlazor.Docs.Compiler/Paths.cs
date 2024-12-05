@@ -5,7 +5,6 @@
     {
         private const string DocsDirectory = "MudBlazor.Docs";
         private const string CalendarDocsDirectory = "../../Heron.MudCalendar/Heron.MudCalendar.Docs";
-        private const string TestDirectory = "MudBlazor.UnitTests";
         private const string TestDirectory = "MudBlazor.UnitTests.Docs";
         private const string SnippetsFile = "Snippets.generated.cs";
         private const string ApiDocumentationFile = "ApiDocumentation.generated.cs";
@@ -37,7 +36,7 @@
 
         public static string DocsStringSnippetsDirPath => Path.Join(DocsDirPath, "Models");
         
-        public static string CalendarDocsDirPath => Directory.EnumerateDirectories(SrcDirPath, CalendarDocsDirectory).FirstOrDefault();
+        public static string? CalendarDocsDirPath => Directory.EnumerateDirectories(SrcDirPath, CalendarDocsDirectory).FirstOrDefault();
 
         public static string DocStringsFilePath => Path.Join(DocsStringSnippetsDirPath, DocStringsFile);
 

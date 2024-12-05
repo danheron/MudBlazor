@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Reflection;
+using System.Xml;
+using Heron.MudCalendar;
 using LoxSmoke.DocXml;
 using Microsoft.AspNetCore.Components;
 using MudBlazor.Extensions;
@@ -190,6 +192,7 @@ public partial class ApiDocumentationBuilder
     /// </summary>
     public void AddTypesToDocument()
     {
+        Assemblies.Add(typeof(MudCalendar).Assembly);
         foreach (var assembly in Assemblies)
         {
             // Document all public types
@@ -219,15 +222,15 @@ public partial class ApiDocumentationBuilder
             AddTypeToDocument(pair.Value);
         }
         
-        // Add MudCalendar public types
-        assembly = typeof(MudCalendar).Assembly;
-        var types = assembly.GetTypes().Where(type => type.IsPublic);
-        foreach (var type in types)
-        {
-            if (PublicTypes.ContainsKey(type.Name)) continue;
-            PublicTypes.Add(type.Name, type);
-            AddTypeToDocument(type);
-        }
+        // // Add MudCalendar public types
+        // assembly = typeof(MudCalendar).Assembly;
+        // var types = assembly.GetTypes().Where(type => type.IsPublic);
+        // foreach (var type in types)
+        // {
+        //     if (PublicTypes.ContainsKey(type.Name)) continue;
+        //     PublicTypes.Add(type.Name, type);
+        //     AddTypeToDocument(type);
+        // }
     }
 
     /// <summary>
@@ -691,201 +694,201 @@ public partial class ApiDocumentationBuilder
         }
     }
     
-    public void MergeXmlDocumentation()
-    {
-        MergeXmlDocumentation(Assembly.Location.Replace(".dll", ".xml", StringComparison.OrdinalIgnoreCase));
-        MergeXmlDocumentation(typeof(MudCalendar).Assembly.Location.Replace(".dll", ".xml", StringComparison.OrdinalIgnoreCase));
-    }
+    // public void MergeXmlDocumentation()
+    // {
+    //     MergeXmlDocumentation(Assembly.Location.Replace(".dll", ".xml", StringComparison.OrdinalIgnoreCase));
+    //     MergeXmlDocumentation(typeof(MudCalendar).Assembly.Location.Replace(".dll", ".xml", StringComparison.OrdinalIgnoreCase));
+    // }
+    //
+    // /// <summary>
+    // /// Merges XML documentation with existing documentation types.
+    // /// </summary>
+    // /// <exception cref="FileNotFoundException"></exception>
+    // public void MergeXmlDocumentation(string path)
+    // {
+    //     // Open the XML documentation file
+    //     //var path = Assembly.Location.Replace(".dll", ".xml", StringComparison.OrdinalIgnoreCase);
+    //     using var reader = new XmlTextReader(path);
+    //     reader.WhitespaceHandling = WhitespaceHandling.None;
+    //     reader.DtdProcessing = DtdProcessing.Ignore;
+    //     // Move to the first member
+    //     reader.ReadToFollowing("member");
+    //     // Read each "<member name=...>" element
+    //     while (!reader.EOF)
+    //     {
+    //         var memberTypeAndName = reader.GetAttribute("name").Split(":");
+    //         var content = reader.ReadInnerXml();
+    //         switch (memberTypeAndName[0])
+    //         {
+    //             case "T": // Type
+    //                 DocumentType(memberTypeAndName[1], content);
+    //                 break;
+    //             case "P": // Property
+    //                 DocumentProperty(memberTypeAndName[1], content);
+    //                 break;
+    //             case "M": // Method
+    //                 DocumentMethod(memberTypeAndName[1], content);
+    //                 break;
+    //             case "F": // Field (or Enum)
+    //                 DocumentField(memberTypeAndName[1], content);
+    //                 break;
+    //             case "E": // Event
+    //                 DocumentEvent(memberTypeAndName[1], content);
+    //                 break;
+    //         }
+    //         // Are we at the end of the document?
+    //         if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "members")
+    //         {
+    //             break;
+    //         }
+    //     }
+    // }
 
-    /// <summary>
-    /// Merges XML documentation with existing documentation types.
-    /// </summary>
-    /// <exception cref="FileNotFoundException"></exception>
-    public void MergeXmlDocumentation(string path)
-    {
-        // Open the XML documentation file
-        //var path = Assembly.Location.Replace(".dll", ".xml", StringComparison.OrdinalIgnoreCase);
-        using var reader = new XmlTextReader(path);
-        reader.WhitespaceHandling = WhitespaceHandling.None;
-        reader.DtdProcessing = DtdProcessing.Ignore;
-        // Move to the first member
-        reader.ReadToFollowing("member");
-        // Read each "<member name=...>" element
-        while (!reader.EOF)
-        {
-            var memberTypeAndName = reader.GetAttribute("name").Split(":");
-            var content = reader.ReadInnerXml();
-            switch (memberTypeAndName[0])
-            {
-                case "T": // Type
-                    DocumentType(memberTypeAndName[1], content);
-                    break;
-                case "P": // Property
-                    DocumentProperty(memberTypeAndName[1], content);
-                    break;
-                case "M": // Method
-                    DocumentMethod(memberTypeAndName[1], content);
-                    break;
-                case "F": // Field (or Enum)
-                    DocumentField(memberTypeAndName[1], content);
-                    break;
-                case "E": // Event
-                    DocumentEvent(memberTypeAndName[1], content);
-                    break;
-            }
-            // Are we at the end of the document?
-            if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "members")
-            {
-                break;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Adds HTML documentation for the specified type.
-    /// </summary>
-    /// <param name="memberFullName">The namespace and class of the member.</param>
-    /// <param name="xmlContent">The raw XML documentation for the member.</param>
-    public void DocumentType(string memberFullName, string xmlContent)
-    {
-        var type = Types.FirstOrDefault(type => type.Value.XmlKey == memberFullName);
-        if (type.Value != null)
-        {
-            type.Value.Remarks = GetRemarks(xmlContent);
-            type.Value.Summary = GetSummary(xmlContent);
-        }
-        else
-        {
-            UnresolvedTypes.Add(memberFullName);
-        }
-    }
-
-    /// <summary>
-    /// Adds HTML documentation for the specified property.
-    /// </summary>
-    /// <param name="memberFullName">The namespace and class of the member.</param>
-    /// <param name="xmlContent">The raw XML documentation for the member.</param>
-    public void DocumentProperty(string memberFullName, string xmlContent)
-    {
-        var property = Properties.FirstOrDefault(type => type.Value.XmlKey == memberFullName);
-        if (property.Value != null)
-        {
-            property.Value.Summary = GetSummary(xmlContent);
-            property.Value.Remarks = GetRemarks(xmlContent);
-        }
-        else
-        {
-            UnresolvedProperties.Add(memberFullName);
-        }
-    }
-
-    /// <summary>
-    /// Adds HTML documentation for the specified field.
-    /// </summary>
-    /// <param name="memberFullName">The namespace and class of the member.</param>
-    /// <param name="xmlContent">The raw XML documentation for the member.</param>
-    public void DocumentField(string memberFullName, string xmlContent)
-    {
-        var field = Fields.FirstOrDefault(type => type.Value.XmlKey == memberFullName);
-        if (field.Value != null)
-        {
-            field.Value.Summary = GetSummary(xmlContent);
-            field.Value.Remarks = GetRemarks(xmlContent);
-        }
-        else
-        {
-            UnresolvedFields.Add(memberFullName);
-        }
-    }
-
-    /// <summary>
-    /// Adds HTML documentation for the specified field.
-    /// </summary>
-    /// <param name="memberFullName">The namespace and class of the member.</param>
-    /// <param name="xmlContent">The raw XML documentation for the member.</param>
-    public void DocumentMethod(string memberFullName, string xmlContent)
-    {
-        var method = Methods.FirstOrDefault(method => method.Value.XmlKey == memberFullName);
-        if (method.Value != null)
-        {
-            method.Value.Summary = GetSummary(xmlContent);
-            method.Value.Remarks = GetRemarks(xmlContent);
-        }
-        else
-        {
-            // No.  It should be documented
-            UnresolvedMethods.Add(memberFullName);
-        }
-    }
-
-    /// <summary>
-    /// Gets the name of a method without its parameters.
-    /// </summary>
-    /// <param name="xmlMethodName"></param>
-    /// <returns></returns>
-    public static string GetMethodFullName(string xmlMethodName)
-    {
-        // Are there parenthesis?
-        var parenthesis = xmlMethodName.IndexOf('(');
-        if (parenthesis == -1)
-        {
-            return xmlMethodName;
-        }
-        else
-        {
-            return xmlMethodName.Substring(0, parenthesis);
-        }
-    }
-
-    /// <summary>
-    /// Gets the name of a method from the full name.
-    /// </summary>
-    /// <param name="xmlMethodName"></param>
-    /// <returns></returns>
-    public static string GetMethodName(string xmlMethodName)
-    {
-        return xmlMethodName.Substring(xmlMethodName.LastIndexOf('.') + 1);
-    }
-
-    /// <summary>
-    /// Adds HTML documentation for the specified field.
-    /// </summary>
-    /// <param name="memberFullName">The namespace and class of the member.</param>
-    /// <param name="xmlContent">The raw XML documentation for the member.</param>
-    public void DocumentEvent(string memberFullName, string xmlContent)
-    {
-        if (Events.TryGetValue(memberFullName, out var documentedType))
-        {
-            documentedType.Summary = GetSummary(xmlContent);
-            documentedType.Remarks = GetRemarks(xmlContent);
-        }
-        else
-        {
-            UnresolvedEvents.Add(memberFullName);
-        }
-    }
-
-    /// <summary>
-    /// Gets the content of the "summary" element as HTML.
-    /// </summary>
-    /// <param name="xml">The member XML to search.</param>
-    /// <returns>The HTML content of the member.</returns>
-    public static string GetSummary(string xml)
-    {
-        var summary = SummaryRegEx().Match(xml).Groups.GetValueOrDefault("1");
-        return summary?.Value;
-    }
-
-    /// <summary>
-    /// Gets the content of the "remarks" element as HTML.
-    /// </summary>
-    /// <param name="xml">The member XML to search.</param>
-    /// <returns>The HTML content of the member.</returns>
-    public static string GetRemarks(string xml)
-    {
-        var remarks = RemarksRegEx().Match(xml).Groups.GetValueOrDefault("1");
-        return remarks?.Value;
-    }
+    // /// <summary>
+    // /// Adds HTML documentation for the specified type.
+    // /// </summary>
+    // /// <param name="memberFullName">The namespace and class of the member.</param>
+    // /// <param name="xmlContent">The raw XML documentation for the member.</param>
+    // public void DocumentType(string memberFullName, string xmlContent)
+    // {
+    //     var type = Types.FirstOrDefault(type => type.Value.XmlKey == memberFullName);
+    //     if (type.Value != null)
+    //     {
+    //         type.Value.Remarks = GetRemarks(xmlContent);
+    //         type.Value.Summary = GetSummary(xmlContent);
+    //     }
+    //     else
+    //     {
+    //         UnresolvedTypes.Add(memberFullName);
+    //     }
+    // }
+    //
+    // /// <summary>
+    // /// Adds HTML documentation for the specified property.
+    // /// </summary>
+    // /// <param name="memberFullName">The namespace and class of the member.</param>
+    // /// <param name="xmlContent">The raw XML documentation for the member.</param>
+    // public void DocumentProperty(string memberFullName, string xmlContent)
+    // {
+    //     var property = Properties.FirstOrDefault(type => type.Value.XmlKey == memberFullName);
+    //     if (property.Value != null)
+    //     {
+    //         property.Value.Summary = GetSummary(xmlContent);
+    //         property.Value.Remarks = GetRemarks(xmlContent);
+    //     }
+    //     else
+    //     {
+    //         UnresolvedProperties.Add(memberFullName);
+    //     }
+    // }
+    //
+    // /// <summary>
+    // /// Adds HTML documentation for the specified field.
+    // /// </summary>
+    // /// <param name="memberFullName">The namespace and class of the member.</param>
+    // /// <param name="xmlContent">The raw XML documentation for the member.</param>
+    // public void DocumentField(string memberFullName, string xmlContent)
+    // {
+    //     var field = Fields.FirstOrDefault(type => type.Value.XmlKey == memberFullName);
+    //     if (field.Value != null)
+    //     {
+    //         field.Value.Summary = GetSummary(xmlContent);
+    //         field.Value.Remarks = GetRemarks(xmlContent);
+    //     }
+    //     else
+    //     {
+    //         UnresolvedFields.Add(memberFullName);
+    //     }
+    // }
+    //
+    // /// <summary>
+    // /// Adds HTML documentation for the specified field.
+    // /// </summary>
+    // /// <param name="memberFullName">The namespace and class of the member.</param>
+    // /// <param name="xmlContent">The raw XML documentation for the member.</param>
+    // public void DocumentMethod(string memberFullName, string xmlContent)
+    // {
+    //     var method = Methods.FirstOrDefault(method => method.Value.XmlKey == memberFullName);
+    //     if (method.Value != null)
+    //     {
+    //         method.Value.Summary = GetSummary(xmlContent);
+    //         method.Value.Remarks = GetRemarks(xmlContent);
+    //     }
+    //     else
+    //     {
+    //         // No.  It should be documented
+    //         UnresolvedMethods.Add(memberFullName);
+    //     }
+    // }
+    //
+    // /// <summary>
+    // /// Gets the name of a method without its parameters.
+    // /// </summary>
+    // /// <param name="xmlMethodName"></param>
+    // /// <returns></returns>
+    // public static string GetMethodFullName(string xmlMethodName)
+    // {
+    //     // Are there parenthesis?
+    //     var parenthesis = xmlMethodName.IndexOf('(');
+    //     if (parenthesis == -1)
+    //     {
+    //         return xmlMethodName;
+    //     }
+    //     else
+    //     {
+    //         return xmlMethodName.Substring(0, parenthesis);
+    //     }
+    // }
+    //
+    // /// <summary>
+    // /// Gets the name of a method from the full name.
+    // /// </summary>
+    // /// <param name="xmlMethodName"></param>
+    // /// <returns></returns>
+    // public static string GetMethodName(string xmlMethodName)
+    // {
+    //     return xmlMethodName.Substring(xmlMethodName.LastIndexOf('.') + 1);
+    // }
+    //
+    // /// <summary>
+    // /// Adds HTML documentation for the specified field.
+    // /// </summary>
+    // /// <param name="memberFullName">The namespace and class of the member.</param>
+    // /// <param name="xmlContent">The raw XML documentation for the member.</param>
+    // public void DocumentEvent(string memberFullName, string xmlContent)
+    // {
+    //     if (Events.TryGetValue(memberFullName, out var documentedType))
+    //     {
+    //         documentedType.Summary = GetSummary(xmlContent);
+    //         documentedType.Remarks = GetRemarks(xmlContent);
+    //     }
+    //     else
+    //     {
+    //         UnresolvedEvents.Add(memberFullName);
+    //     }
+    // }
+    //
+    // /// <summary>
+    // /// Gets the content of the "summary" element as HTML.
+    // /// </summary>
+    // /// <param name="xml">The member XML to search.</param>
+    // /// <returns>The HTML content of the member.</returns>
+    // public static string GetSummary(string xml)
+    // {
+    //     var summary = SummaryRegEx().Match(xml).Groups.GetValueOrDefault("1");
+    //     return summary?.Value;
+    // }
+    //
+    // /// <summary>
+    // /// Gets the content of the "remarks" element as HTML.
+    // /// </summary>
+    // /// <param name="xml">The member XML to search.</param>
+    // /// <returns>The HTML content of the member.</returns>
+    // public static string GetRemarks(string xml)
+    // {
+    //     var remarks = RemarksRegEx().Match(xml).Groups.GetValueOrDefault("1");
+    //     return remarks?.Value;
+    // }
 
     /// <summary>
     /// Serializes all documentation to the MudBlazor.Docs "Generated" folder.
