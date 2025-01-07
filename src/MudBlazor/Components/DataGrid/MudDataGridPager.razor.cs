@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
@@ -16,7 +17,7 @@ namespace MudBlazor
     /// Represents a pager for navigating pages of a <see cref="MudDataGrid{T}"/>.
     /// </summary>
     /// <typeparam name="T">The kind of data displayed in the grid.</typeparam>
-    public partial class MudDataGridPager<T> : MudComponentBase, IDisposable
+    public partial class MudDataGridPager<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T> : MudComponentBase, IDisposable
     {
         /// <summary>
         /// The grid which contains this pager.
@@ -119,8 +120,8 @@ namespace MudBlazor
 
         protected string Classname =>
             new CssBuilder("mud-table-pagination-toolbar")
-            .AddClass(Class)
-            .Build();
+                .AddClass(Class)
+                .Build();
 
         private async Task SetRowsPerPageAsync(int size)
         {

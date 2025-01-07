@@ -1,8 +1,6 @@
-﻿using System.IO;
-using System.Linq;
-
-namespace MudBlazor.Docs.Compiler
+﻿namespace MudBlazor.Docs.Compiler
 {
+#nullable enable
     public static class Paths
     {
         private const string DocsDirectory = "MudBlazor.Docs";
@@ -28,17 +26,17 @@ namespace MudBlazor.Docs.Compiler
                 }
                 while (Path.GetFileName(workingPath) != "src" && !string.IsNullOrWhiteSpace(workingPath));
 
-                return workingPath;
+                return workingPath!;
             }
         }
 
-        public static string DocsDirPath => Directory.EnumerateDirectories(SrcDirPath, DocsDirectory).FirstOrDefault();
+        public static string? DocsDirPath => Directory.EnumerateDirectories(SrcDirPath, DocsDirectory).FirstOrDefault();
 
         public static string TestDirPath => Path.Join(Directory.EnumerateDirectories(SrcDirPath, TestDirectory).FirstOrDefault(), "Generated");
 
         public static string DocsStringSnippetsDirPath => Path.Join(DocsDirPath, "Models");
         
-        public static string CalendarDocsDirPath => Directory.EnumerateDirectories(SrcDirPath, CalendarDocsDirectory).FirstOrDefault();
+        public static string? CalendarDocsDirPath => Directory.EnumerateDirectories(SrcDirPath, CalendarDocsDirectory).FirstOrDefault();
 
         public static string DocStringsFilePath => Path.Join(DocsStringSnippetsDirPath, DocStringsFile);
 

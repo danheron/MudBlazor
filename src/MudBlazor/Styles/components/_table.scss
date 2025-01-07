@@ -110,7 +110,11 @@
   vertical-align: inherit;
 
   & .mud-checkbox {
-    margin: -12px;
+    margin: -4px;
+
+    > .mud-icon-button {
+      padding: 4px;
+    }
   }
 }
 
@@ -260,6 +264,16 @@
         position: sticky;
         z-index: 2;
         top: 0;
+      }
+
+      & * .mud-filter-panel-cell {
+          top: 58px;
+      }
+
+      & * .mud-table-cell.sticky-left,
+      & * .mud-table-cell.sticky-right {
+        z-index: 3;
+        background-color: var(--mud-palette-background-gray);
       }
     }
   }

@@ -2,15 +2,11 @@
 // MudBlazor licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using Bunit;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using MudBlazor.Services;
-using MudBlazor.UnitTests.Mocks;
 using NUnit.Framework;
 using TestContext = Bunit.TestContext;
 
@@ -45,18 +41,20 @@ namespace MudBlazor.UnitTests.UserAttributes
             var mudComponentTypes = GetMudComponentTypes();
 
             mudComponentTypes.Should().NotBeEmpty();
+
+            // these components do not need to have user attributes
+            var excludedComponents = new HashSet<string>()
+            {
+                nameof(MudPopover), nameof(MudStep), nameof(MudContextualActionBar),
+                "Column`1", "FooterCell`1", "HeaderCell`1", "FilterHeaderCell`1", "SelectColumn`1",
+                "HierarchyColumn`1", "PropertyColumn`2", "TemplateColumn`1",
+            };
+
             foreach (var componentType in mudComponentTypes)
             {
-                // these components do not need to have markup
-                if (componentType == typeof(MudPopover) || componentType.Name == "Column`1" || componentType.Name == "FooterCell`1"
-                    || componentType.Name == "HeaderCell`1" || componentType.Name == "FilterHeaderCell`1" || componentType.Name == "SelectColumn`1"
-                    || componentType.Name == "HierarchyColumn`1" || componentType.Name == "PropertyColumn`2" || componentType.Name == "TemplateColumn`1")
-                {
+                if (excludedComponents.Contains(componentType.Name))
                     continue;
-                }
-
                 var component = componentFactory.Create(componentType, testContext);
-
                 component.Markup.Should()
                     .NotBeEmpty(because: $"the component {componentType.Name} should at least contain one element");
 

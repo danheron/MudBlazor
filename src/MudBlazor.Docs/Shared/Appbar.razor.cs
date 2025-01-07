@@ -21,6 +21,7 @@ public partial class Appbar
     private string _badgeTextSoon = "coming soon";
     private MudAutocomplete<ApiLinkServiceEntry> _searchAutocomplete = null!;
     private DialogOptions _dialogOptions = new() { Position = DialogPosition.TopCenter, NoHeader = true };
+    //private DropdownSettings _dropdownBehavior = new() { Fixed = true, OverflowBehavior = OverflowBehavior.FlipOnOpen };
     private readonly List<ApiLinkServiceEntry> _apiLinkServiceEntries =
     [
         new ApiLinkServiceEntry
@@ -120,8 +121,13 @@ public partial class Appbar
     [Parameter]
     public bool DisplaySearchBar { get; set; } = true;
 
-    private async void OnSearchResult(ApiLinkServiceEntry entry)
+    private async void OnSearchResult(ApiLinkServiceEntry? entry)
     {
+        if (entry is null)
+        {
+            return;
+        }
+
         NavigationManager.NavigateTo(entry.Link);
         await Task.Delay(1000);
         await _searchAutocomplete.ClearAsync();
