@@ -20,6 +20,7 @@ namespace MudBlazor
     /// <seealso cref="DialogParameters{T}"/>
     /// <seealso cref="DialogReference"/>
     /// <seealso cref="MudBlazor.DialogService"/>
+    /// <seealso cref="MudMessageBox" />
     public partial class MudDialog : MudComponentBase
     {
         private IDialogReference? _reference;
@@ -178,7 +179,7 @@ namespace MudBlazor
         /// The element which will receive focus when this dialog is shown.
         /// </summary>
         /// <remarks>
-        /// Defaults to <see cref="MudGlobal.DialogDefaults.DefaultFocus"/>.        
+        /// Defaults to <see cref="DefaultFocus.Element"/> in <see cref="MudGlobal.DialogDefaults.DefaultFocus"/>.        
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.Dialog.Behavior)]

@@ -1,0 +1,44 @@
+﻿@page "/components/field"
+
+<DocsPage>
+    <DocsPageHeader Title="Field" Component="@nameof(MudField)" />
+    <DocsPageContent>
+
+        <DocsPageSection>
+            <SectionHeader Title="Example Fields">
+                <Description></Description>
+            </SectionHeader>
+            <SectionContent Code="@nameof(FieldBasicExample)" ShowCode="false">
+                <FieldBasicExample />
+            </SectionContent>
+        </DocsPageSection>
+
+        <DocsPageSection>
+            <SectionHeader Title="Minimize Content Padding">
+                <Description>
+                    Set <CodeInline>InnerPadding</CodeInline> to false to minimize the inner padding.
+                    It does not remove the full inner padding, but it is minimized to the absolute necessary value, to not concur with the label.
+                </Description>
+            </SectionHeader>
+            <SectionContent Code="@nameof(FieldMinimizePaddingExample)" ShowCode="false">
+                <FieldMinimizePaddingExample />
+            </SectionContent>
+        </DocsPageSection>
+
+        <DocsPageSection>
+            <SectionHeader Title="Advanced Usage">
+                <Description>
+                    Ultimately you could build your own custom input controls with <CodeInline Tag>MudField</CodeInline>. One step in that 
+                    direction is to define the content as a <CodeInline>RenderFragment</CodeInline>. This allows to set the 
+                    <CodeInline>ChildContent</CodeInline> to null which results in the label becoming a placeholder automatically. 
+                    Of course it makes a lot of sense to add some kind of input in the content like we did in this example with a
+                    native color picker.
+                </Description>
+            </SectionHeader>
+            <SectionContent Code="@nameof(FieldLabelPlaceholderExample)" ShowCode="false">
+                <FieldLabelPlaceholderExample />
+            </SectionContent>
+        </DocsPageSection>
+
+    </DocsPageContent>
+</DocsPage>

@@ -12,6 +12,10 @@ namespace MudBlazor
     /// or <see href="https://developer.mozilla.org/docs/Web/HTML/Element/a">anchor</see> if <c>Href</c> is set.<br/>
     /// You can directly add attributes like <c>title</c> or <c>aria-label</c>.
     /// </remarks>
+    /// <seealso cref="MudButtonGroup" />
+    /// <seealso cref="MudFab" />
+    /// <seealso cref="MudIconButton" />
+    /// <seealso cref="MudToggleIconButton" />
     public partial class MudButton : MudBaseButton, IDisposable
     {
         protected string Classname => new CssBuilder("mud-button-root mud-button")
@@ -94,7 +98,7 @@ namespace MudBlazor
         /// The color of the button.
         /// </summary>
         /// <remarks>
-        /// Defaults to <see cref="Color.Default"/>.  Theme colors are supported.
+        /// Defaults to <see cref="Color.Default"/> in <see cref="MudGlobal.ButtonDefaults.Color"/>.
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.Button.Appearance)]
@@ -104,17 +108,18 @@ namespace MudBlazor
         /// The size of the button.
         /// </summary>
         /// <remarks>
-        /// Defaults to <see cref="Size.Medium"/>.   Use the <see cref="IconSize"/> property to set the size of icons.
+        /// Defaults to <see cref="Size.Medium"/>.
+        /// Use the <see cref="IconSize"/> property to set the size of icons.
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.Button.Appearance)]
-        public Size Size { get; set; } = MudGlobal.ButtonDefaults.Size;
+        public Size Size { get; set; } = Size.Medium;
 
         /// <summary>
         /// The display variation to use.
         /// </summary>
         /// <remarks>
-        /// Defaults to <see cref="Variant.Text"/>.
+        /// Defaults to <see cref="Variant.Text"/> in <see cref="MudGlobal.ButtonDefaults.Variant"/>.
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.Button.Appearance)]
