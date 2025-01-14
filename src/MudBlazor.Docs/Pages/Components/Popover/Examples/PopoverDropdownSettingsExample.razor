@@ -7,7 +7,6 @@
                    DropdownSettings="@_dropdownSettings"
                    AnchorOrigin="@_anchor"
                    TransformOrigin="@_transform"
-                   RelativeWidth="_dropdownWidth"
                    Variant="Variant.Outlined"
                    AdornmentIcon="@Icons.Material.Filled.Search"
                    AdornmentColor="Color.Primary">
@@ -22,10 +21,9 @@
         <MudMenu Label="MudMenu"
                  Variant="Variant.Filled"
                  Color="Color.Primary"
-                 DropdownSettings="@_dropdownSettings"
                  AnchorOrigin="@_anchor"
                  TransformOrigin="@_transform"
-                 RelativeWidth="_dropdownWidth">
+                 >
             <MudMenuItem Label="Enlist" />
             <MudMenuItem Label="Barracks" />
             <MudMenuItem Label="Armory" />
@@ -40,7 +38,7 @@
                          DropdownSettings="@_dropdownSettings"
                          AnchorOrigin="@_anchor"
                          TransformOrigin="@_transform"
-                         RelativeWidth="_dropdownWidth" />
+                         />
     </MudItem>
 
     <MudItem md="1" />
@@ -96,13 +94,13 @@
     </MudItem>
 
     <MudItem md="2">
-        <MudSelect T="DropdownWidth"
-                   Label="Dropdown Width"
-                   @bind-Value="@_dropdownWidth">
-            <MudSelectItem Value="@DropdownWidth.Relative">Relative (equal to activator width)</MudSelectItem>
-            <MudSelectItem Value="@DropdownWidth.Adaptive">Adaptive (min = activator width)</MudSelectItem>
-            <MudSelectItem Value="@DropdownWidth.Ignore">Ignore (independent width)</MudSelectItem>
-        </MudSelect>
+        @* <MudSelect T="DropdownWidth" *@
+        @*            Label="Dropdown Width" *@
+        @*            @bind-Value="@_dropdownWidth"> *@
+        @*     <MudSelectItem Value="@DropdownWidth.Relative">Relative (equal to activator width)</MudSelectItem> *@
+        @*     <MudSelectItem Value="@DropdownWidth.Adaptive">Adaptive (min = activator width)</MudSelectItem> *@
+        @*     <MudSelectItem Value="@DropdownWidth.Ignore">Ignore (independent width)</MudSelectItem> *@
+        @* </MudSelect> *@
     </MudItem>
 
 </MudGrid>
@@ -114,7 +112,7 @@
     private Origin _transform = Origin.TopLeft;
     private bool _fixed = false;
     private OverflowBehavior _overflowBehavior = OverflowBehavior.FlipOnOpen;
-    private DropdownWidth _dropdownWidth = DropdownWidth.Relative;
+    //private DropdownWidth _dropdownWidth = DropdownWidth.Relative;
 
     private DropdownSettings _dropdownSettings => new DropdownSettings() { Fixed = _fixed, OverflowBehavior = _overflowBehavior, };
 
