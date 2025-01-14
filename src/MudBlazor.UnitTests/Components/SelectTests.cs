@@ -88,6 +88,46 @@ namespace MudBlazor.UnitTests.Components
             comp.WaitForAssertion(() => @switch.Instance.Value.Should().Be(false));
         }
 
+        [Test]
+        public async Task SelectTest_KeyDown_WhileClosed()
+        {
+            var comp = Context.RenderComponent<SelectFocusAndTypeTest>();
+            var select = comp.FindComponent<MudSelect<string>>();
+
+            //open menu on keydown
+            comp.WaitForAssertion(() => comp.Find("div.mud-popover").ClassList.Should().NotContain("mud-popover-open"));
+            await comp.InvokeAsync(() => select.Instance.HandleKeyDownAsync(new KeyboardEventArgs() { Key = "t", Type = "keydown" }));
+            comp.WaitForAssertion(() => comp.Find("div.mud-popover").ClassList.Should().NotContain("mud-popover-open"));
+            comp.WaitForAssertion(() => select.Instance.Value.Should().Be("Tennessee"));
+
+            //cycle through matching results
+            await Task.Delay(210);
+            await comp.InvokeAsync(() => select.Instance.HandleKeyDownAsync(new KeyboardEventArgs() { Key = "t", Type = "keydown" }));
+            comp.WaitForAssertion(() => select.Instance.Value.Should().Be("Texas"));
+            await Task.Delay(210);
+            await comp.InvokeAsync(() => select.Instance.HandleKeyDownAsync(new KeyboardEventArgs() { Key = "t", Type = "keydown" }));
+            comp.WaitForAssertion(() => select.Instance.Value.Should().Be("Tennessee"));
+
+            //multi-string search
+            await Task.Delay(210);
+            await comp.InvokeAsync(() => select.Instance.HandleKeyDownAsync(new KeyboardEventArgs() { Key = "c", Type = "keydown" }));
+            await comp.InvokeAsync(() => select.Instance.HandleKeyDownAsync(new KeyboardEventArgs() { Key = "o", Type = "keydown" }));
+            await comp.InvokeAsync(() => select.Instance.HandleKeyDownAsync(new KeyboardEventArgs() { Key = "l", Type = "keydown" }));
+            comp.WaitForAssertion(() => select.Instance.Value.Should().Be("Colorado"));
+
+            //paused search
+            await Task.Delay(210);
+            await comp.InvokeAsync(() => select.Instance.HandleKeyDownAsync(new KeyboardEventArgs() { Key = "i", Type = "keydown" }));
+            await comp.InvokeAsync(() => select.Instance.HandleKeyDownAsync(new KeyboardEventArgs() { Key = "o", Type = "keydown" }));
+            comp.WaitForAssertion(() => select.Instance.Value.Should().Be("Iowa"));
+
+            await Task.Delay(210);
+            await comp.InvokeAsync(() => select.Instance.HandleKeyDownAsync(new KeyboardEventArgs() { Key = "i", Type = "keydown" }));
+            await Task.Delay(210);
+            await comp.InvokeAsync(() => select.Instance.HandleKeyDownAsync(new KeyboardEventArgs() { Key = "o", Type = "keydown" }));
+            comp.WaitForAssertion(() => select.Instance.Value.Should().Be("Ohio"));
+        }
+
         /// <summary>
         /// Click should not close the menu and selecting multiple values should update the bindable value with a comma separated list.
         /// </summary>
@@ -146,6 +186,26 @@ namespace MudBlazor.UnitTests.Components
                 comp.FindAll("div.mud-list-item path")[3].Attributes["d"].Value.Should().Be(@checked);
                 comp.FindAll("div.mud-list-item path")[5].Attributes["d"].Value.Should().Be(@unchecked);
             });
+        }
+
+        [Test]
+        public async Task MultiSelectWithValueContainZeroTest()
+        {
+            var comp = Context.RenderComponent<MultiSelectWithValueContainZeroTest>();
+            var inputs = comp.FindAll("input");
+            inputs.Count.Should().Be(3);
+            inputs[1].GetAttribute("value").Should().Be("Value2");
+            await inputs[1].TriggerEventAsync("onpointerdown", new MouseEventArgs());
+            await Task.Delay(500);
+            var listItems = comp.FindAll(".mud-list-item");
+            foreach (var listItem in listItems)
+            {
+                await listItem.TriggerEventAsync("onclick", new MouseEventArgs());
+            }
+
+            inputs = comp.FindAll("input");
+            inputs[0].GetAttribute("value").Should().Be("Value3, Value1");
+            inputs[1].GetAttribute("value").Should().Be("Value3; Value1");
         }
 
         /// <summary>

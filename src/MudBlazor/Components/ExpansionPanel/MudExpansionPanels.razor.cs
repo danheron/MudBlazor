@@ -11,6 +11,8 @@ namespace MudBlazor
     /// <summary>
     /// A container which manages <see cref="MudExpansionPanel"/> components such that when one panel is expanded the others are collapsed automatically.
     /// </summary>
+    /// <seealso cref="MudExpansionPanel"/>
+    /// <seealso cref="MudCollapse"/>
     public partial class MudExpansionPanels : MudComponentBase
     {
         private List<MudExpansionPanel> _panels = new();
@@ -26,10 +28,11 @@ namespace MudBlazor
         /// </summary>
         /// <remarks>
         /// Defaults to <c>false</c>.
+        /// Can be overridden by <see cref="MudGlobal.Rounded"/>.
         /// </remarks>
         [Parameter]
         [Category(CategoryTypes.ExpansionPanel.Appearance)]
-        public bool Square { get; set; }
+        public bool Square { get; set; } = MudGlobal.Rounded == false;
 
         /// <summary>
         /// Allows multiple panels to be expanded at the same time.

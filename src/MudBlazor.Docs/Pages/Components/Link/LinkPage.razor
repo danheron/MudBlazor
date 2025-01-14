@@ -1,0 +1,34 @@
+﻿@page "/components/link"
+
+<DocsPage>
+    <DocsPageHeader Title="Link" Component="@nameof(MudLink)" />
+    <DocsPageContent>
+
+        <DocsPageSection>
+            <SectionHeader Title="Simple Links">
+                <Description></Description>
+            </SectionHeader>
+            <SectionContent Code="@nameof(LinkSimpleExample)">
+                <LinkSimpleExample />
+            </SectionContent>
+        </DocsPageSection>
+
+        <DocsPageSection>
+            <SectionHeader Title="Underlines">
+                <Description></Description>
+            </SectionHeader>
+            <SectionContent Code="@nameof(LinkUnderlineExample)">
+                <LinkUnderlineExample />
+            </SectionContent>
+        </DocsPageSection>
+
+        <DocsPageSection>
+            <SectionHeader Title="OnClick">
+                <Description><CodeInline>OnClick</CodeInline> property provides a way to invoke an action instead of (or in conjunction with) <CodeInline>Href</CodeInline> navigation.</Description>
+            </SectionHeader>
+            <SectionContent Code="@nameof(LinkOnClickExample)">
+                <LinkOnClickExample />
+            </SectionContent>
+        </DocsPageSection>
+    </DocsPageContent>
+</DocsPage>

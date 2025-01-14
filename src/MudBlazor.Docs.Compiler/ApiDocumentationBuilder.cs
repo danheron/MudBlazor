@@ -2,13 +2,7 @@
 // MudBlazor licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using System.Xml;
 using Heron.MudCalendar;
 using Heron.MudTotalCalendar;
@@ -18,7 +12,6 @@ using MudBlazor.Extensions;
 
 namespace MudBlazor.Docs.Compiler;
 
-#nullable enable
 /// <summary>
 /// Represents a generator of HTML documentation based on XML documentation files.
 /// </summary>
@@ -30,7 +23,7 @@ namespace MudBlazor.Docs.Compiler;
 /// <see cref="DocumentedEvent"/>, and <see cref="DocumentedField"/>, in a strongly typed manner. 
 /// </para>
 /// </remarks>
-public partial class ApiDocumentationBuilder
+public class ApiDocumentationBuilder
 {
     /// <summary>
     /// The reader for XML documentation.
@@ -187,6 +180,7 @@ public partial class ApiDocumentationBuilder
     public bool Execute()
     {
         AddTypesToDocument();
+        ResolveSeeAlsoLinks();
         FindDeclaringTypes();
         AddGlobalsToDocument();
         ExportApiDocumentation();
@@ -273,6 +267,12 @@ public partial class ApiDocumentationBuilder
                 Remarks = typeXmlDocs.Remarks?.Replace("\r\n", "").Trim(),
                 Summary = typeXmlDocs.Summary?.Replace("\r\n", "").Trim(),
                 Type = type,
+                Links = typeXmlDocs.SeeAlso.Select(seealso => new DocumentedLink()
+                {
+                    Cref = seealso.Cref,
+                    Href = seealso.Href,
+                    Text = seealso.Text,
+                }).ToList()
             };
 
             // Add the root-level type
@@ -913,7 +913,7 @@ public partial class ApiDocumentationBuilder
     public void ExportApiDocumentation()
     {
         // Sort everything by category
-        using var writer = new ApiDocumentationWriter(Paths.ApiDocumentationFilePath);
+        using var writer = new ApiDocumentationWriter();
         writer.WriteHeader();
         writer.WriteClassStart();
         writer.WriteConstructorStart();
@@ -926,8 +926,18 @@ public partial class ApiDocumentationBuilder
         writer.LinkDocumentedTypes(Methods);
         writer.LinkDocumentedTypes(Fields);
         writer.LinkDocumentedTypes(Events);
+        writer.WriteSeeAlsoLinks(Types);
         writer.WriteConstructorEnd();
         writer.WriteClassEnd();
+        var currentCode = string.Empty;
+        if (File.Exists(Paths.ApiDocumentationFilePath))
+        {
+            currentCode = File.ReadAllText(Paths.ApiDocumentationFilePath);
+        }
+        if (currentCode != writer.ToString())
+        {
+            File.WriteAllText(Paths.ApiDocumentationFilePath, writer.ToString());
+        }
     }
 
     /// <summary>
@@ -1013,33 +1023,60 @@ public partial class ApiDocumentationBuilder
     }
 
     /// <summary>
-    /// The regular expression used to extract XML documentation summaries.
+    /// Resolves XML references like "T:MudBlazor.MudAlert" into a <see cref="DocumentedType"/> or <see cref="DocumentedMember"/>.
     /// </summary>
-    [GeneratedRegex(@"MudBlazor\.MudGlobal\+([ \S]*)Defaults\.")]
-    private static partial Regex GlobalComponentNameRegEx();
-
-    /// <summary>
-    /// The regular expression used to extract XML documentation summaries.
-    /// </summary>
-    [GeneratedRegex(@"<summary>\s*([ \S]*)\s*<\/summary>")]
-    private static partial Regex SummaryRegEx();
-
-    /// <summary>
-    /// The regular expression used to extract XML documentation remarks.
-    /// </summary>
-    [GeneratedRegex(@"<remarks>\s*([ \S]*)\s*<\/remarks>")]
-    private static partial Regex RemarksRegEx();
-
-    /// <summary>
-    /// The regular expression used to extract XML documentation return values.
-    /// </summary>
-    [GeneratedRegex(@"<returns>\s*([ \S]*)\s*<\/returns>")]
-    private static partial Regex ReturnsRegEx();
-
-    /// <summary>
-    /// The regular expression used to calculate the XML member key.
-    /// </summary>
-    /// <returns></returns>
-    [GeneratedRegex(@"\[.*\]")]
-    private static partial Regex TypeFullNameRegEx();
+    public void ResolveSeeAlsoLinks()
+    {
+        // Find the types which have see-also links
+        foreach (var type in Types.Where(type => type.Value.Links.Count > 0))
+        {
+            // Go through each link
+            foreach (var link in type.Value.Links)
+            {
+                // Is this a CREF link?  (e.g. "T:MudBlazor.MudAlert")
+                if (!string.IsNullOrEmpty(link.Cref))
+                {
+                    // Split the type and link
+                    var values = link.Cref.Split(":");
+                    var linkType = values[0];
+                    var cref = values[1];
+                    switch (linkType)
+                    {
+                        case "T":
+                            if (Types.TryGetValue(cref, out var existingType))
+                            {
+                                link.Type = existingType;
+                            }
+                            break;
+                        case "P":
+                            if (Properties.TryGetValue(cref, out var existingProperty))
+                            {
+                                link.Property = existingProperty;
+                            }
+                            break;
+                        case "F":
+                            if (Fields.TryGetValue(cref, out var existingField))
+                            {
+                                link.Field = existingField;
+                            }
+                            break;
+                        case "M":
+                            if (Methods.TryGetValue(cref, out var existingMethod))
+                            {
+                                link.Method = existingMethod;
+                            }
+                            break;
+                        case "E":
+                            if (Events.TryGetValue(cref, out var existingEvent))
+                            {
+                                link.Event = existingEvent;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
+    }
 }

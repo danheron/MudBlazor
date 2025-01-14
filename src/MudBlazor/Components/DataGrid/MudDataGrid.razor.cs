@@ -422,16 +422,17 @@ namespace MudBlazor
         /// Defaults to <c>1</c>.  A higher number creates a heavier drop shadow.  Use a value of <c>0</c> for no shadow.
         /// </remarks>
         [Parameter]
-        public int Elevation { set; get; } = MudGlobal.DataGridDefaults.Elevation;
+        public int Elevation { set; get; } = 1;
 
         /// <summary>
         /// Disables rounded corners.
         /// </summary>
         /// <remarks>
         /// Defaults to <c>false</c>.
+        /// Can be overridden by <see cref="MudGlobal.Rounded"/>
         /// </remarks>
         [Parameter]
-        public bool Square { get; set; } = MudGlobal.DataGridDefaults.Square;
+        public bool Square { get; set; } = MudGlobal.Rounded == false;
 
         /// <summary>
         /// Shows an outline around this grid.
@@ -440,7 +441,7 @@ namespace MudBlazor
         /// Defaults to <c>false</c>.
         /// </remarks>
         [Parameter]
-        public bool Outlined { get; set; } = MudGlobal.DataGridDefaults.Outlined;
+        public bool Outlined { get; set; }
 
         /// <summary>
         /// Shows left and right borders for each column.
@@ -449,7 +450,7 @@ namespace MudBlazor
         /// Defaults to <c>false</c>.
         /// </remarks>
         [Parameter]
-        public bool Bordered { get; set; } = MudGlobal.DataGridDefaults.Bordered;
+        public bool Bordered { get; set; }
 
         /// <summary>
         /// The content for any column groupings.
@@ -479,7 +480,7 @@ namespace MudBlazor
         /// Defaults to <c>false</c>.
         /// </remarks>
         [Parameter]
-        public bool Dense { get; set; } = MudGlobal.DataGridDefaults.Dense;
+        public bool Dense { get; set; }
 
         /// <summary>
         /// Highlights rows when hovering over them.
@@ -488,7 +489,7 @@ namespace MudBlazor
         /// Defaults to <c>false</c>.
         /// </remarks>
         [Parameter]
-        public bool Hover { get; set; } = MudGlobal.DataGridDefaults.Hover;
+        public bool Hover { get; set; }
 
         /// <summary>
         /// Shows alternating row styles.
@@ -497,7 +498,7 @@ namespace MudBlazor
         /// Defaults to <c>false</c>.
         /// </remarks>
         [Parameter]
-        public bool Striped { get; set; } = MudGlobal.DataGridDefaults.Striped;
+        public bool Striped { get; set; }
 
         /// <summary>
         /// Fixes the header in place even as the grid is scrolled.
@@ -506,7 +507,7 @@ namespace MudBlazor
         /// Set the <see cref="Height"/> property to make this grid scrollable.
         /// </remarks>
         [Parameter]
-        public bool FixedHeader { get; set; } = MudGlobal.DataGridDefaults.FixedHeader;
+        public bool FixedHeader { get; set; }
 
         /// <summary>
         /// Fixes the footer in place even as the grid is scrolled.
@@ -515,7 +516,7 @@ namespace MudBlazor
         /// Set the <see cref="Height"/> property to make this grid scrollable.
         /// </remarks>
         [Parameter]
-        public bool FixedFooter { get; set; } = MudGlobal.DataGridDefaults.FixedFooter;
+        public bool FixedFooter { get; set; }
 
         /// <summary>
         /// Shows icons for each column filter.
@@ -575,7 +576,7 @@ namespace MudBlazor
         /// Defaults to <c>false</c>.  Only works when <see cref="Height"/> is set.  This feature can improve performance for large data sets.
         /// </remarks>
         [Parameter]
-        public bool Virtualize { get; set; } = MudGlobal.DataGridDefaults.Virtualize;
+        public bool Virtualize { get; set; }
 
         /// <summary>
         /// A RenderFragment that will be used as a placeholder when the Virtualize component is asynchronously loading data.
@@ -920,11 +921,18 @@ namespace MudBlazor
                     return;
                 _currentPage = value;
                 InvokeAsync(StateHasChanged);
+                CurrentPageChanged.InvokeAsync(_currentPage);
 
                 if (_isFirstRendered)
                     InvokeAsync(InvokeServerLoadFunc);
             }
         }
+
+        /// <summary>
+        /// Occurs when <see cref="CurrentPage"/> has changed.
+        /// </summary>
+        [Parameter]
+        public EventCallback<int> CurrentPageChanged { get; set; }
 
         /// <summary>
         /// Prevents values from being edited.
@@ -1481,6 +1489,11 @@ namespace MudBlazor
         {
             if (value)
             {
+                if (!MultiSelection)
+                {
+                    Selection.Remove(SelectedItem);
+                }
+
                 Selection.Add(item);
                 SelectedItem = item;
             }
@@ -1503,8 +1516,12 @@ namespace MudBlazor
                 }
             }
 
-            await InvokeAsync(() => SelectedItemsChangedEvent.Invoke(SelectedItems));
-            await SelectedItemsChanged.InvokeAsync(SelectedItems);
+            if (MultiSelection)
+            {
+                await InvokeAsync(() => SelectedItemsChangedEvent.Invoke(SelectedItems));
+                await SelectedItemsChanged.InvokeAsync(SelectedItems);
+            }
+
             await InvokeAsync(StateHasChanged);
         }
 
@@ -1661,7 +1678,12 @@ namespace MudBlazor
             _rowsPerPage = size;
 
             if (resetPage)
+            {
+                var currentPageHasChanged = _currentPage != 0;
                 _currentPage = 0;
+                if (currentPageHasChanged)
+                    await CurrentPageChanged.InvokeAsync(_currentPage);
+            }
 
             await RowsPerPageChanged.InvokeAsync(_rowsPerPage.Value);
 
@@ -1801,19 +1823,27 @@ namespace MudBlazor
         /// </remarks>
         public async Task SetSelectedItemAsync(T item)
         {
-            if (MultiSelection && SelectOnRowClick)
-            {
-                if (Selection.Contains(item))
-                {
-                    Selection.Remove(item);
-                }
-                else
-                {
-                    Selection.Add(item);
-                }
+            if (!SelectOnRowClick)
+                return;
 
+            if (!Selection.Remove(item))
+            {
+                Selection.Add(item);
+            }
+            else if (!MultiSelection)
+            {
+                SelectedItem = default;
+                return;
+            }
+
+            if (MultiSelection)
+            {
                 SelectedItemsChangedEvent?.Invoke(SelectedItems);
                 await SelectedItemsChanged.InvokeAsync(SelectedItems);
+            }
+            else
+            {
+                Selection.Remove(SelectedItem);
             }
 
             SelectedItem = item;
@@ -1875,11 +1905,13 @@ namespace MudBlazor
 
         internal void CloseFilters()
         {
-            FilterDefinitions.RemoveAll(p =>
-                p.Value == null
-                && (p.Operator != FilterOperator.String.Empty || p.Operator != FilterOperator.Number.Empty || p.Operator != FilterOperator.DateTime.Empty)
-            );
+            FilterDefinitions.RemoveAll(p => p.Value == null && ValueRequired(p));
         }
+
+        private static bool ValueRequired(IFilterDefinition<T> filterDefinition) => filterDefinition.Operator is not
+            FilterOperator.String.Empty and not FilterOperator.String.NotEmpty and not
+            FilterOperator.Number.Empty and not FilterOperator.Number.NotEmpty and not
+            FilterOperator.DateTime.Empty and not FilterOperator.DateTime.NotEmpty;
 
         internal async Task HideAllColumnsAsync()
         {
