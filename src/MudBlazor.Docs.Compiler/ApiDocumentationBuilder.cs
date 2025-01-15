@@ -194,6 +194,7 @@ public class ApiDocumentationBuilder
     public void AddTypesToDocument()
     {
         Assemblies.Add(typeof(MudCalendar).Assembly);
+        Assemblies.Add(typeof(MudTotalCalendar).Assembly);
         foreach (var assembly in Assemblies)
         {
             // Document all public types
@@ -214,6 +215,7 @@ public class ApiDocumentationBuilder
                 .ToList();
             foreach (var type in typesToDocument)
             {
+                if (type.Name == "_Imports" && PublicTypes.ContainsKey(type.Name)) continue;
                 PublicTypes.Add(type.Name, type);
             }
         }
