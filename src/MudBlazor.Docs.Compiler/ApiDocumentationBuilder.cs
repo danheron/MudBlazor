@@ -192,7 +192,7 @@ public class ApiDocumentationBuilder
     /// </summary>
     public void AddTypesToDocument()
     {
-        Assemblies.Add(typeof(MudCalendar).Assembly);
+        Assemblies.Add(typeof(MudCalendar<CalendarItem>).Assembly);
         foreach (var assembly in Assemblies)
         {
             // Document all public types
