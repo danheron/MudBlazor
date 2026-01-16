@@ -9,7 +9,7 @@ namespace MudBlazor;
 #nullable enable
 
 /// <summary>
-/// Represents a compact element used to enter information, select a choice, filter content, or trigger an action.
+/// Compact elements used to enter information, select a choice, filter content, or trigger an action.
 /// </summary>
 /// <typeparam name="T">The type of item managed by this component.</typeparam>
 /// <seealso cref="MudChipSet{T}"/>
@@ -82,7 +82,8 @@ public partial class MudChip<T> : MudComponentBase, IAsyncDisposable
         {
             return "button";
         }
-        else if (IsAnchor)
+
+        if (IsAnchor)
         {
             return "a";
         }
@@ -381,7 +382,7 @@ public partial class MudChip<T> : MudComponentBase, IAsyncDisposable
     /// <remarks>
     /// When <c>true</c>, the chip is displayed in a selected state.
     /// </remarks>
-    [Parameter]
+    [Parameter, ParameterState]
     [Category(CategoryTypes.Chip.Behavior)]
     public bool Selected { get; set; }
 
@@ -414,15 +415,18 @@ public partial class MudChip<T> : MudComponentBase, IAsyncDisposable
     {
         await base.OnAfterRenderAsync(firstRender);
 
-        var options = new KeyInterceptorOptions(
-            "mud-chip",
-            [
-                new(" ", preventDown: "key+none", preventUp: "key+none"),
-                new("Backspace", preventDown: "key+none"),
-                new("Delete", preventDown: "key+none")
-            ]);
+        if (firstRender)
+        {
+            var options = new KeyInterceptorOptions(
+                "mud-chip",
+                [
+                    new(" ", preventDown: "key+none", preventUp: "key+none"),
+                    new("Backspace", preventDown: "key+none"),
+                    new("Delete", preventDown: "key+none")
+                ]);
 
-        await KeyInterceptorService.SubscribeAsync(_chipContainerId, options, keyDown: HandleKeyDownAsync);
+            await KeyInterceptorService.SubscribeAsync(_chipContainerId, options, keyDown: HandleKeyDownAsync);
+        }
     }
 
     protected internal async Task OnClickAsync(MouseEventArgs ev)

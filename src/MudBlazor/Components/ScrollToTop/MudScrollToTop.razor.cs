@@ -7,7 +7,7 @@ namespace MudBlazor
 #nullable enable
 
     /// <summary>
-    /// A button which lets the user jump to the top of the page.
+    /// A button to quickly return to the top of the page.
     /// </summary>
     public partial class MudScrollToTop : IDisposable
     {
@@ -133,7 +133,7 @@ namespace MudBlazor
             await OnScroll.InvokeAsync(e);
 
             var topOffset = e.NodeName == "#document"
-                ? e.FirstChildBoundingClientRect.Top * -1
+                ? e.FirstChildBoundingClientRect?.Top * -1
                 : e.ScrollTop;
 
             if (topOffset >= TopOffset && Visible != true)

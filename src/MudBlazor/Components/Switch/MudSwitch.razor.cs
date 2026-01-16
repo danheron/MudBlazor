@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using MudBlazor.Services;
 using MudBlazor.Utilities;
@@ -8,6 +6,13 @@ using MudBlazor.Utilities;
 namespace MudBlazor
 {
 #nullable enable
+
+    /// <summary>
+    /// Toggles between two values with the tap of a button, visually distinct from checkboxes. Use switches (not radio buttons) if the items in a list can be independently controlled.
+    /// </summary>
+    /// <typeparam name="T">The kind of value being switched, typically a <see cref="bool"/>.</typeparam>
+    /// <seealso cref="MudCheckBox{T}"/>
+    /// <seealso cref="MudRadio{T}"/>
     public partial class MudSwitch<T> : MudBooleanInput<T>
     {
         private string _elementId = Identifier.Create("switch");
@@ -22,7 +27,6 @@ namespace MudBlazor
         protected override string LabelClassname => new CssBuilder("mud-switch")
             .AddClass("mud-disabled", GetDisabledState())
             .AddClass("mud-readonly", GetReadOnlyState())
-            .AddClass($"mud-switch-label-{Size.ToDescriptionString()}")
             .AddClass($"mud-input-content-placement-{ConvertPlacement(LabelPlacement).ToDescriptionString()}")
             .Build();
 
@@ -50,26 +54,45 @@ namespace MudBlazor
             .Build();
 
         /// <summary>
-        /// The base color of the component in its none active/unchecked state. It supports the theme colors.
+        /// The color of this switch when in an unchecked state.
         /// </summary>
+        /// <remarks>
+        /// Defaults to <see cref="Color.Default"/>.
+        /// </remarks>
         [Parameter]
         [Category(CategoryTypes.Radio.Appearance)]
         public Color UncheckedColor { get; set; } = Color.Default;
 
         /// <summary>
-        /// Shows an icon on Switch's thumb.
+        /// The icon to display for the switch thumb.
         /// </summary>
+        /// <remarks>
+        /// Defaults to <c>null</c>.
+        /// </remarks>
         [Parameter]
         [Category(CategoryTypes.FormComponent.Appearance)]
         public string? ThumbIcon { get; set; }
 
         /// <summary>
-        /// The color of the thumb icon. Supports the theme colors.
+        /// The color of the thumb icon.
         /// </summary>
+        /// <remarks>
+        /// Defaults to <see cref="Color.Default"/>. Only applies when <see cref="ThumbIcon"/> is set.
+        /// </remarks>
         [Parameter]
         [Category(CategoryTypes.FormComponent.Appearance)]
         public Color ThumbIconColor { get; set; } = Color.Default;
 
+        /// <summary>
+        /// Occurs when a key is pressed.
+        /// </summary>
+        /// <param name="obj">Information about which key was pressed.</param>
+        /// <remarks>
+        /// Supported keys are:<br />
+        /// <c>ArrowLeft</c> or <c>Delete</c> to uncheck the switch.<br />
+        /// <c>ArrowRight</c>, <c>Enter</c>, or <c>NumpadEnter</c> to check the switch.<br />
+        /// <c>Space</c> to toggle the selected value.
+        /// </remarks>
         protected internal async Task HandleKeyDownAsync(KeyboardEventArgs obj)
         {
             if (GetDisabledState() || GetReadOnlyState())
@@ -100,6 +123,7 @@ namespace MudBlazor
             }
         }
 
+        /// <inheritdoc />
         protected override void OnInitialized()
         {
             base.OnInitialized();
@@ -110,6 +134,7 @@ namespace MudBlazor
             }
         }
 
+        /// <inheritdoc />
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             if (firstRender)

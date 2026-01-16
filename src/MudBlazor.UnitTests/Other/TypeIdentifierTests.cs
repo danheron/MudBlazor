@@ -2,9 +2,8 @@
 // MudBlazor licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Numerics;
-using FluentAssertions;
+using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace MudBlazor.UnitTests.Other
@@ -91,6 +90,20 @@ namespace MudBlazor.UnitTests.Other
         {
             var isBoolean = TypeIdentifier.IsBoolean(type);
             isBoolean.Should().Be(expected);
+        }
+
+        [Test]
+        [TestCase(null, false)]
+        [TestCase(typeof(int), false)]
+        [TestCase(typeof(int?), false)]
+        [TestCase(typeof(DateOnly), true)]
+        [TestCase(typeof(DateOnly?), true)]
+        [TestCase(typeof(DateTime), false)]
+        [TestCase(typeof(DateTime?), false)]
+        public void IsDateOnly_Test(Type type, bool expected)
+        {
+            var isDateOnly = TypeIdentifier.IsDateOnly(type);
+            isDateOnly.Should().Be(expected);
         }
 
         [Test]

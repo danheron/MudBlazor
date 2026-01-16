@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using FluentAssertions;
+﻿using AwesomeAssertions;
 using NUnit.Framework;
 
 namespace MudBlazor.UnitTests.Utilities.Comparer;
 
+#nullable enable
 [TestFixture]
 public class CollectionComparerTests
 {
-
     [Test]
     public void EqualsTest()
     {
@@ -23,7 +21,7 @@ public class CollectionComparerTests
         comparer.Equals([1, 2, 1], [1, 2, 2, 2, 1]).Should().Be(true);
         comparer.Equals([1], [1, 1, 1]).Should().Be(true);
 
-        // check unequality
+        // check inequality
         comparer.Equals(null, []).Should().Be(false);
         comparer.Equals([], null).Should().Be(false);
         comparer.Equals(null, [1]).Should().Be(false);
@@ -53,13 +51,6 @@ public class CollectionComparerTests
         comparer.GetHashCode([1, 2, 3]).Should().NotBe(comparer.GetHashCode([1, 2, 4]));
     }
 
-    private class LowercaseEqualityComparer : IEqualityComparer<string>
-    {
-        public bool Equals(string x, string y) => EqualityComparer<string>.Default.Equals(x?.ToLowerInvariant(), y?.ToLowerInvariant());
-
-        public int GetHashCode(string obj) => EqualityComparer<string>.Default.GetHashCode(obj?.ToLowerInvariant());
-    }
-
     [Test]
     public void EqualsWithCustomComparerTest()
     {
@@ -74,7 +65,7 @@ public class CollectionComparerTests
         comparer.Equals(["a", "B", "c"], ["c", "A", "b", "a", "C", "b", "b"]).Should().Be(true);
         comparer.Equals(["a", "b", "c"], ["a", "b", "c"]).Should().Be(true);
 
-        // check unequality
+        // check inequality
         comparer.Equals(null, []).Should().Be(false);
         comparer.Equals([], null).Should().Be(false);
         comparer.Equals(null, ["A"]).Should().Be(false);
@@ -104,5 +95,20 @@ public class CollectionComparerTests
         comparer.GetHashCode(["a", "b", "c"]).Should().NotBe(comparer.GetHashCode(["a", "b"]));
         comparer.GetHashCode(["a", "b", "c"]).Should().NotBe(comparer.GetHashCode(["a", "b", "x"]));
         comparer.GetHashCode(["a", "b", "c"]).Should().NotBe(comparer.GetHashCode(["a", "a", "x"]));
+    }
+
+    private class LowercaseEqualityComparer : IEqualityComparer<string?>
+    {
+        public bool Equals(string? x, string? y) => EqualityComparer<string>.Default.Equals(x?.ToLowerInvariant(), y?.ToLowerInvariant());
+
+        public int GetHashCode(string? obj)
+        {
+            if (obj is null)
+            {
+                return 0;
+            }
+
+            return EqualityComparer<string>.Default.GetHashCode(obj.ToLowerInvariant());
+        }
     }
 }

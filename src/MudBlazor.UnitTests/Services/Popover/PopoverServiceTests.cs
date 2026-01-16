@@ -2,12 +2,7 @@
 // MudBlazor licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -545,7 +540,7 @@ public class PopoverServiceTests
             .Callback(signalEvent.Set);
 
         jsRuntimeMock.Setup(x => x.InvokeAsync<IJSVoidResult>("mudPopover.initialize", It.IsAny<CancellationToken>(),
-                It.Is<object[]>(y => y.Length == 2)))
+                It.Is<object[]>(y => y.Length == 3)))
             .ReturnsAsync(Mock.Of<IJSVoidResult>())
             .Verifiable();
 
