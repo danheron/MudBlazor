@@ -1,5 +1,10 @@
 @import '../abstracts/variables';
 
+$header-height: 59px;
+$header-height-dense: 39px;
+$header-height-with-filter: 109px; // 59px + 50px (filter row height)
+$header-height-with-filter-dense: 89px; // 39px + 50px (filter row height)
+
 .mud-table {
   color: var(--mud-palette-text-primary);
   background-color: var(--mud-palette-surface);
@@ -7,7 +12,7 @@
   transition: box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
 
   &.mud-table-square {
-    border-radius: 0px;
+    border-radius: 0;
   }
 
   &.mud-table-outlined {
@@ -29,8 +34,12 @@
 
     & .mud-table-cell {
       color: var(--mud-palette-text-primary);
-      font-weight: 500;
-      line-height: 1.5rem;
+      font-size: var(--mud-typography-subtitle2-size);
+      font-family: var(--mud-typography-subtitle2-family);
+      font-weight: var(--mud-typography-subtitle2-weight);
+      line-height: var(--mud-typography-subtitle2-lineheight);
+      letter-spacing: var(--mud-typography-subtitle2-letterspacing);
+      text-transform: var(--mud-typography-subtitle2-text-transform);
     }
   }
 
@@ -39,6 +48,12 @@
 
     & .mud-table-cell {
       color: var(--mud-palette-text-primary);
+      font-size: var(--mud-typography-body2-size);
+      font-family: var(--mud-typography-body2-family);
+      font-weight: var(--mud-typography-body2-weight);
+      line-height: var(--mud-typography-body2-lineheight);
+      letter-spacing: var(--mud-typography-body2-letterspacing);
+      text-transform: var(--mud-typography-body2-text-transform);
     }
   }
 
@@ -53,25 +68,30 @@
 }
 
 .mud-table-sort-label {
-  cursor: pointer;
   display: inline-flex;
   align-items: center;
   flex-direction: inherit;
   justify-content: flex-start;
 
-  @media(hover: hover) and (pointer: fine) {
-    &:hover {
-      color: var(--mud-palette-action-default);
+  &.mud-clickable {
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
 
-      .mud-table-sort-label-icon {
-        opacity: 0.8;
+    @media(hover: hover) and (pointer: fine) {
+      &:hover {
+        opacity: 0.64;
+
+        .mud-table-sort-label-icon {
+          opacity: 1;
+        }
       }
     }
   }
 
   .mud-table-sort-label-icon {
     font-size: 18px;
-    transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,transform 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+    transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, transform 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
     margin-left: 4px;
     user-select: none;
     margin-right: 4px;
@@ -99,16 +119,11 @@
 }
 
 
-
 .mud-table-cell {
   display: table-cell;
   padding: 16px;
-  font-size: 0.875rem;
   text-align: start;
-  font-weight: 400;
-  line-height: 1.43;
   border-bottom: 1px solid var(--mud-palette-table-lines);
-  letter-spacing: 0.01071em;
   vertical-align: inherit;
 
   & .mud-checkbox {
@@ -116,6 +131,26 @@
 
     > .mud-icon-button {
       padding: 4px;
+    }
+  }
+
+  & > .mud-input-control {
+    & > div.mud-input.mud-input-text {
+      color: var(--mud-theme-on-surface);
+      font-size: var(--mud-typography-body2-size);
+      margin-top: -14px;
+      margin-bottom: -8px;
+    }
+  }
+
+  & > .mud-select {
+    & > .mud-input-control {
+      & > div.mud-input.mud-input-text {
+        color: var(--mud-theme-on-surface);
+        font-size: var(--mud-typography-body2-size);
+        margin-top: -14px;
+        margin-bottom: -8px;
+      }
     }
   }
 }
@@ -181,41 +216,31 @@
   & .mud-table-bordered {
     & .mud-table-container .mud-table-root .mud-table-body {
       & .mud-table-row {
-        .mud-table-cell:last-child {
-          border-right: 1px solid var(--mud-palette-table-lines);
-          border-top-right-radius: 0px;
-        }
-      }
-    }
-
-    & .mud-table-container .mud-table-root .mud-table-body {
-      & .mud-table-row {
         .mud-table-cell:first-child {
           border-right: none;
-          border-top-right-radius: 0px;
+          border-top-right-radius: 0;
+        }
+
+        .mud-table-cell:last-child {
+          border-right: 1px solid var(--mud-palette-table-lines);
+          border-top-right-radius: 0;
         }
       }
     }
-
 
     & .mud-table-container .mud-table-root .mud-table-head.table-head-bordered {
       & .mud-table-row {
         .mud-table-cell:last-child {
           border-right: 1px solid var(--mud-palette-table-lines);
-          border-top-right-radius: 0px;
+          border-top-right-radius: 0;
         }
-      }
-    }
 
-    & .mud-table-container .mud-table-root .mud-table-head.table-head-bordered {
-      & .mud-table-row {
         .mud-table-cell:only-child {
           border-right: none;
           border-top-right-radius: var(--mud-default-borderradius);
         }
       }
     }
-
 
     & .mud-table-container .mud-table-root .mud-table-head {
       & .mud-table-row {
@@ -230,7 +255,7 @@
       & .mud-table-row {
         .mud-table-cell:last-child {
           border-right: 1px solid var(--mud-palette-table-lines);
-          border-top-right-radius: 0px;
+          border-top-right-radius: 0;
         }
       }
     }
@@ -251,25 +276,55 @@
   }
 
   & * .mud-table-root {
-
     .mud-table-head {
       & * .mud-table-cell:first-child {
-        border-radius: var(--mud-default-borderradius) 0px 0px 0px;
+        border-radius: var(--mud-default-borderradius) 0 0 0;
       }
 
       & * .mud-table-cell:last-child {
-        border-radius: 0px var(--mud-default-borderradius) 0px 0px;
+        border-radius: 0 var(--mud-default-borderradius) 0 0;
       }
 
-      & * .mud-table-cell {
+      //Shared Sticky Header Styles
+      .mud-table-cell, .mud-table-loading {
         background-color: var(--mud-palette-surface);
         position: sticky;
         z-index: 2;
+      }
+
+      // Row 1 (always)
+      .mud-table-cell {
         top: 0;
       }
 
-      & * .mud-filter-panel-cell {
-        top: 58px;
+      // Row 2 (filter or panel row)
+      .filter-header-cell {
+        top: $header-height;
+      }
+
+      // Row 2 (filter or panel row if table is dense)
+      &.mud-table-dense .filter-header-cell {
+        top: $header-height-dense;
+      }
+
+      // Row 2 (loading row without filter header)
+      .mud-table-loading {
+        top: $header-height;
+      }
+
+      // Row 2 (loading row without filter header if table is dense)
+      &.mud-table-dense .mud-table-loading {
+        top: $header-height-dense;
+      }
+
+      // Row 3 (loading row with filter header)
+      &:has(.filter-header-cell) .mud-table-loading {
+        top: $header-height-with-filter;
+      }
+
+      // Row 3 (loading row with filter header if table is dense)
+      &.mud-table-dense:has(.filter-header-cell) .mud-table-loading {
+        top: $header-height-with-filter-dense;
       }
 
       & * .mud-table-cell.sticky-left,
@@ -281,23 +336,12 @@
   }
 }
 
-.mud-table-sticky-header.mud-table-dense {
-  & * .mud-table-root {
-    .mud-table-head {
-      & * .mud-filter-panel-cell {
-        top: 39px;
-      }
-    }
-  }
-}
-
 .mud-table-sticky-footer {
   .mud-table-container {
     overflow-x: auto;
   }
 
   & * .mud-table-root {
-
     .mud-table-foot {
       position: sticky;
       z-index: 2;
@@ -310,12 +354,25 @@
   }
 }
 
-
 .mud-table-row {
   color: inherit;
   display: table-row;
   outline: 0;
   vertical-align: middle;
+}
+
+.mud-table-row-clickable {
+  cursor: pointer;
+}
+
+.mud-table-row-disabled {
+  color: var(--mud-palette-text-disabled);
+  cursor: default;
+  pointer-events: none;
+
+  & .mud-table-cell {
+    color: var(--mud-palette-text-disabled) !important;
+  }
 }
 
 .mud-table-hover {
@@ -341,29 +398,6 @@
     @media(hover: hover) and (pointer: fine) {
       & .mud-table-row:nth-of-type(odd):hover {
         background-color: var(--mud-palette-table-hover);
-      }
-    }
-  }
-}
-
-
-.mud-table-cell {
-  & > .mud-input-control {
-    & > div.mud-input.mud-input-text {
-      color: var(--mud-theme-on-surface);
-      font-size: 0.875rem;
-      margin-top: -14px;
-      margin-bottom: -8px;
-    }
-  }
-
-  & > .mud-select {
-    & > .mud-input-control {
-      & > div.mud-input.mud-input-text {
-        color: var(--mud-theme-on-surface);
-        font-size: 0.875rem;
-        margin-top: -14px;
-        margin-bottom: -8px;
       }
     }
   }
@@ -457,11 +491,11 @@
   cursor: pointer;
   margin-left: 10px !important;
   margin-right: 10px !important;
-  margin-top: 0px !important;
+  margin-top: 0 !important;
   min-width: 52px;
 
   & .mud-select-input {
-    margin-top: 0px !important;
+    margin-top: 0 !important;
     padding: 0 7px !important;
   }
 
@@ -511,13 +545,20 @@
   }
 }
 
-.mud-table-row-expander {
-  margin: -12px -2px -12px -12px;
+.mud-header-togglehierarchy .mud-table-row-expander {
+  padding: 6px;
 }
 
-@mixin table-display-smalldevices ($breakpoint) {
+.mud-table-row-expander {
+  margin-top: -12px;
+  margin-bottom: -12px;
+  margin-inline-start: -12px;
+  margin-inline-end: -2px;
+}
+
+@mixin table-display-smalldevices($breakpoint) {
   .mud-#{$breakpoint}table {
-    .mud-table-root .mud-table-head,
+    .mud-table-root .mud-table-head .mud-table-row,
     .mud-table-root .mud-table-foot {
       display: none;
     }
@@ -548,7 +589,6 @@
       text-align: start !important;
     }
 
-
     &.mud-table-dense {
       & .mud-table-cell {
         padding: 6px 16px;
@@ -575,7 +615,6 @@
     }
 
     .mud-table-pagination {
-
       .mud-table-pagination-spacer {
         flex: none;
       }
@@ -604,9 +643,7 @@
           }
         }
       }
-    }
 
-    &.mud-table-bordered {
       & .mud-table-container .mud-table-root .mud-table-body {
         & .mud-table-row {
           .mud-table-cell {
@@ -617,8 +654,9 @@
     }
   }
 }
+
 // Table Pagination Flex Wrapper on old phones
-@media (max-width:360px) {
+@media (max-width: 360px) {
   .mud-table {
     .mud-table-pagination {
       .mud-select {
@@ -636,7 +674,7 @@
   }
 }
 
-@media (max-width:416px) {
+@media (max-width: 416px) {
   .mud-table {
     .mud-table-pagination {
       .mud-table-pagination-toolbar {
@@ -658,26 +696,26 @@
   }
 }
 
-@media (max-width:$breakpoint-sm) {
+@media (max-width: $breakpoint-sm) {
   @include table-display-smalldevices("xs-");
 }
 
-@media (max-width:$breakpoint-md) {
+@media (max-width: $breakpoint-md) {
   @include table-display-smalldevices("sm-");
 }
 
-@media (max-width:$breakpoint-lg) {
+@media (max-width: $breakpoint-lg) {
   @include table-display-smalldevices("md-");
 }
 
-@media (max-width:$breakpoint-xl) {
+@media (max-width: $breakpoint-xl) {
   @include table-display-smalldevices("lg-");
 }
 
-@media (max-width:$breakpoint-xxl) {
+@media (max-width: $breakpoint-xxl) {
   @include table-display-smalldevices("xl-");
 }
 
-@media (min-width:$breakpoint-xxl) {
+@media (min-width: $breakpoint-xxl) {
   @include table-display-smalldevices("xxl-");
 }

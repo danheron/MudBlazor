@@ -4,9 +4,8 @@ using MudBlazor.Utilities;
 
 namespace MudBlazor
 {
-#nullable enable
     /// <summary>
-    /// Represents a container for content which can be collapsed and expanded.
+    /// A container for content which can be collapsed and expanded.
     /// </summary>
     /// <seealso cref="MudExpansionPanels"/>
     /// <seealso cref="MudExpansionPanel"/>
@@ -21,9 +20,10 @@ namespace MudBlazor
         private CollapseState _state = CollapseState.Exited;
 
         protected string Classname => new CssBuilder("mud-collapse-container")
-            .AddClass($"mud-collapse-entering", _state == CollapseState.Entering)
-            .AddClass($"mud-collapse-entered", _state == CollapseState.Entered)
-            .AddClass($"mud-collapse-exiting", _state == CollapseState.Exiting)
+            .AddClass("mud-collapse-entering", _state == CollapseState.Entering)
+            .AddClass("mud-collapse-entered", _state == CollapseState.Entered)
+            .AddClass("mud-collapse-exiting", _state == CollapseState.Exiting)
+            .AddClass("invisible", _state == CollapseState.Exited)
             .AddClass(Class)
             .Build();
 
@@ -75,6 +75,17 @@ namespace MudBlazor
                 .WithParameter(() => Expanded)
                 .WithEventCallback(() => ExpandedChanged)
                 .WithChangeHandler(OnExpandedParameterChangedAsync);
+        }
+
+        protected override void OnAfterRender(bool firstRender)
+        {
+            base.OnAfterRender(firstRender);
+
+            if (firstRender && _expandedState.Value)
+            {
+                _state = CollapseState.Entered;
+                StateHasChanged();
+            }
         }
 
         private Task OnExpandedParameterChangedAsync(ParameterChangedEventArgs<bool> args)

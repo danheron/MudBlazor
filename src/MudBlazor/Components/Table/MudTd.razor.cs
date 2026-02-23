@@ -3,7 +3,6 @@ using MudBlazor.Utilities;
 
 namespace MudBlazor
 {
-#nullable enable
 
     /// <summary>
     /// A cell within a <see cref="MudTr" />, <see cref="MudTHeadRow"/>, or <see cref="MudTFootRow"/> row component.
@@ -12,9 +11,16 @@ namespace MudBlazor
     {
         protected string Classname =>
             new CssBuilder("mud-table-cell")
+                .AddClass(Context?.Table?.CellClass)
                 .AddClass("mud-table-cell-hide", HideSmall)
                 .AddClass(Class)
                 .Build();
+
+        /// <summary>
+        /// The current state of the <see cref="MudTable{T}"/> containing this group.
+        /// </summary>
+        [CascadingParameter]
+        public TableContext? Context { get; set; }
 
         /// <summary>
         /// The content within this cell.

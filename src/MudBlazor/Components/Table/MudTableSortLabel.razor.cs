@@ -1,12 +1,9 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading.Tasks;
+﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Components;
 using MudBlazor.Utilities;
 
 namespace MudBlazor
 {
-#nullable enable
 
     /// <summary>
     /// A clickable column which toggles the sort column and direction for a <see cref="MudTable{T}"/>.
@@ -16,9 +13,18 @@ namespace MudBlazor
     {
         private SortDirection _direction = SortDirection.None;
 
-        protected string Classname => new CssBuilder("mud-button-root mud-table-sort-label")
-            .AddClass(Class)
-            .Build();
+        protected string Classname =>
+            new CssBuilder("mud-table-sort-label")
+                .AddClass("mud-clickable", Enabled)
+                .AddClass(Class)
+                .Build();
+
+        protected string SortIconClassname =>
+            new CssBuilder("mud-table-sort-label-icon")
+                .AddClass("mud-direction-none", _direction == SortDirection.None)
+                .AddClass("mud-direction-asc", _direction == SortDirection.Ascending)
+                .AddClass("mud-direction-desc", _direction == SortDirection.Descending)
+                .Build();
 
         /// <summary>
         /// The current state of the <see cref="MudTable{T}"/> containing this sort label.
@@ -171,21 +177,6 @@ namespace MudBlazor
         {
             _direction = dir;
             StateHasChanged();
-        }
-
-        private string GetSortIconClass()
-        {
-            if (_direction == SortDirection.Descending)
-            {
-                return "mud-table-sort-label-icon mud-direction-desc";
-            }
-
-            if (_direction == SortDirection.Ascending)
-            {
-                return "mud-table-sort-label-icon mud-direction-asc";
-            }
-
-            return "mud-table-sort-label-icon";
         }
     }
 }

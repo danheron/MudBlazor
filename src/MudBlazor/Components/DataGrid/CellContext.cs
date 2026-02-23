@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace MudBlazor
 {
-#nullable enable
     /// <summary>
     /// Represents the current state of a cell in a <see cref="MudDataGrid{T}"/>.
     /// </summary>
@@ -53,6 +52,7 @@ namespace MudBlazor
                 StartEditingItemAsync = () => dataGrid.SetEditingItemAsync(item),
                 CancelEditingItemAsync = () => dataGrid.CancelEditingItemAsync(),
                 ToggleHierarchyVisibilityForItemAsync = () => dataGrid.ToggleHierarchyVisibilityAsync(item),
+                GetGroupIcon = (expanded, rightToLeft) => dataGrid.GetGroupIcon(expanded, rightToLeft),
             };
         }
 
@@ -80,6 +80,11 @@ namespace MudBlazor
             /// The function which toggles hierarchy visibility.
             /// </summary>
             public required Func<Task> ToggleHierarchyVisibilityForItemAsync { get; init; }
+
+            /// <summary>
+            /// The function which retrieves the GroupIcon.
+            /// </summary>
+            public Func<bool, bool, string>? GetGroupIcon { get; init; }
         }
     }
 }

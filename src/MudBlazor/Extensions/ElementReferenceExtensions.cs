@@ -1,14 +1,11 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using MudBlazor.Interop;
 
 namespace MudBlazor
 {
-#nullable enable
     [ExcludeFromCodeCoverage]
     public static class ElementReferenceExtensions
     {
@@ -66,5 +63,10 @@ namespace MudBlazor
 
             return elementReference.GetJSRuntime()?.InvokeVoidAsync("mudElementRef.removeDefaultPreventingHandlers", elementReference, eventNames, listenerIds) ?? ValueTask.CompletedTask;
         }
+
+        public static ValueTask MudAttachBlurEventWithJS<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>(
+            this ElementReference elementReference,
+            DotNetObjectReference<T> obj) where T : class =>
+            elementReference.GetJSRuntime()?.InvokeVoidAsync("mudElementRef.addOnBlurEvent", elementReference, obj) ?? ValueTask.CompletedTask;
     }
 }
