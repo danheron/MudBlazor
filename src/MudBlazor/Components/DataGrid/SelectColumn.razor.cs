@@ -5,7 +5,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Components;
 
-#nullable enable
 namespace MudBlazor;
 
 /// <summary>
@@ -14,7 +13,6 @@ namespace MudBlazor;
 /// <typeparam name="T">The type of item to select.</typeparam>
 /// <seealso cref="MudDataGrid{T}"/>
 public partial class SelectColumn<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T> : TemplateColumn<T>
-    where T : notnull
 {
     /// <summary>
     /// Shows a checkbox in the header.

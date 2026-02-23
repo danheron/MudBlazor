@@ -3,7 +3,6 @@ using MudBlazor.Utilities;
 
 namespace MudBlazor
 {
-#nullable enable
 
     /// <summary>
     /// Displays a placeholder preview of content before the data gets loaded, reducing load-time frustration.
@@ -12,8 +11,8 @@ namespace MudBlazor
     {
         protected string Classname =>
             new CssBuilder("mud-skeleton")
-                .AddClass($"mud-skeleton-{SkeletonType.ToDescriptionString()}")
-                .AddClass($"mud-skeleton-{Animation.ToDescriptionString()}")
+                .AddClass($"mud-skeleton-{SkeletonType.ToStringFast(true)}")
+                .AddClass($"mud-skeleton-{Animation.ToStringFast(true)}")
                 .AddClass(Class)
                 .Build();
 

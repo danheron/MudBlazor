@@ -6,7 +6,6 @@ using MudBlazor.Utilities;
 
 namespace MudBlazor
 {
-#nullable enable
     /// <summary>
     /// Allows users to select a value within a specified range. Sliders should present the full range of available values and the value should take effect immediately.
     /// </summary>
@@ -33,8 +32,8 @@ namespace MudBlazor
 
         protected string Classname =>
             new CssBuilder("mud-slider")
-                .AddClass($"mud-slider-{Size.ToDescriptionString()}")
-                .AddClass($"mud-slider-{Color.ToDescriptionString()}")
+                .AddClass($"mud-slider-{Size.ToStringFast(true)}")
+                .AddClass($"mud-slider-{Color.ToStringFast(true)}")
                 .AddClass("mud-slider-vertical", Vertical)
                 .AddClass(Class)
                 .Build();

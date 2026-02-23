@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Components.Web;
 using MudBlazor.Utilities;
 
-#nullable enable
 namespace MudBlazor
 {
     /// <summary>
@@ -180,7 +179,7 @@ namespace MudBlazor
             }
         }
 
-        protected string InputTypeString => InputType.ToDescriptionString();
+        protected string InputTypeString => InputType.ToStringFast(true);
 
         protected bool IsClearable() => Clearable && ReadValue is not null;
 

@@ -3,7 +3,6 @@ using MudBlazor.Extensions;
 using MudBlazor.State;
 using MudBlazor.Utilities;
 
-#nullable enable
 namespace MudBlazor
 {
     /// <summary>
@@ -371,14 +370,14 @@ namespace MudBlazor
                 return b
                     .AddClass("mud-range")
                     .AddClass("mud-range-between")
-                    .AddClass($"mud-current mud-{Color.ToDescriptionString()}-text mud-button-outlined mud-button-outlined-{Color.ToDescriptionString()}", day == DateTime.Today)
+                    .AddClass($"mud-current mud-{Color.ToStringFast(true)}-text mud-button-outlined mud-button-outlined-{Color.ToStringFast(true)}", day == DateTime.Today)
                     .Build();
             }
 
             if (_firstDate?.Date == day && _secondDate?.Date == day)
             {
                 return b.AddClass("mud-selected")
-                    .AddClass($"mud-theme-{Color.ToDescriptionString()}")
+                    .AddClass($"mud-theme-{Color.ToStringFast(true)}")
                     .Build();
             }
 
@@ -388,7 +387,7 @@ namespace MudBlazor
                     .AddClass("mud-range")
                     .AddClass("mud-range-start-selected")
                     .AddClass("mud-range-selection", _firstDate != null)
-                    .AddClass($"mud-theme-{Color.ToDescriptionString()}")
+                    .AddClass($"mud-theme-{Color.ToStringFast(true)}")
                     .Build();
             }
 
@@ -397,29 +396,29 @@ namespace MudBlazor
                 return b.AddClass("mud-selected")
                     .AddClass("mud-range")
                     .AddClass("mud-range-end-selected")
-                    .AddClass($"mud-theme-{Color.ToDescriptionString()}")
+                    .AddClass($"mud-theme-{Color.ToStringFast(true)}")
                     .Build();
             }
 
             if (CheckDateRange(day, compareStart: isEqualTo, compareEnd: isEqualTo))
             {
-                return b.AddClass("mud-selected").AddClass($"mud-theme-{Color.ToDescriptionString()}").Build();
+                return b.AddClass("mud-selected").AddClass($"mud-theme-{Color.ToStringFast(true)}").Build();
             }
 
             if (_firstDate?.Date < day)
             {
                 return b.AddClass("mud-range", _secondDate is null && day != DateTime.Today)
                     .AddClass("mud-range-selection")
-                    .AddClass($"mud-range-selection-{Color.ToDescriptionString()}", _firstDate is not null)
-                    .AddClass($"mud-current mud-{Color.ToDescriptionString()}-text mud-button-outlined mud-button-outlined-{Color.ToDescriptionString()}", day == DateTime.Today)
+                    .AddClass($"mud-range-selection-{Color.ToStringFast(true)}", _firstDate is not null)
+                    .AddClass($"mud-current mud-{Color.ToStringFast(true)}-text mud-button-outlined mud-button-outlined-{Color.ToStringFast(true)}", day == DateTime.Today)
                     .Build();
             }
 
             if (day == DateTime.Today)
             {
                 return b.AddClass("mud-current")
-                    .AddClass($"mud-button-outlined mud-button-outlined-{Color.ToDescriptionString()}")
-                    .AddClass($"mud-{Color.ToDescriptionString()}-text")
+                    .AddClass($"mud-button-outlined mud-button-outlined-{Color.ToStringFast(true)}")
+                    .AddClass($"mud-{Color.ToStringFast(true)}-text")
                     .Build();
             }
 
@@ -452,7 +451,7 @@ namespace MudBlazor
 
                 if (PickerVariant != PickerVariant.Static)
                 {
-                    await Task.Delay(ClosingDelay);
+                    await Task.Delay(TimeSpan.FromMilliseconds(ClosingDelay), TimeProvider);
                     await CloseAsync(false);
                 }
             }

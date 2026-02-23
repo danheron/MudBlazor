@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Components.Web;
 using MudBlazor.Extensions;
 using MudBlazor.Utilities;
 
-#nullable enable
 namespace MudBlazor
 {
     /// <summary>
@@ -31,7 +30,7 @@ namespace MudBlazor
             set => SetDateAsync(value, true).CatchAndLog();
         }
 
-        private DateTime _lastSetTime = DateTime.MinValue;
+        private DateTimeOffset _lastSetTime = DateTimeOffset.MinValue;
         private const int DebounceTimeoutMs = 100;
 
         protected async Task SetDateAsync(DateTime? date, bool updateValue)
@@ -41,7 +40,7 @@ namespace MudBlazor
                 date = DateTime.SpecifyKind(date.Value, _value.Value.Kind);
             }
 
-            var now = DateTime.UtcNow;
+            var now = TimeProvider.GetUtcNow();
 
             /* See #7866 for more details
              * When the date is set in the UI, this method gets called with the same value multiple time. This guard
@@ -109,11 +108,11 @@ namespace MudBlazor
             if (day < GetMonthStart(month) || day > GetMonthEnd(month))
                 return b.AddClass("mud-hidden").Build();
             if ((Date?.Date == day && _selectedDate == null) || _selectedDate?.Date == day)
-                return b.AddClass("mud-selected").AddClass($"mud-theme-{Color.ToDescriptionString()}").Build();
+                return b.AddClass("mud-selected").AddClass($"mud-theme-{Color.ToStringFast(true)}").Build();
             if (day == TimeProvider.GetLocalNow().Date)
                 return b.AddClass("mud-current mud-button-outlined")
                         .AddClass(
-                            $"mud-button-outlined-{Color.ToDescriptionString()} mud-{Color.ToDescriptionString()}-text")
+                            $"mud-button-outlined-{Color.ToStringFast(true)} mud-{Color.ToStringFast(true)}-text")
                         .Build();
             return b.Build();
         }
@@ -128,7 +127,7 @@ namespace MudBlazor
 
                 if (PickerVariant != PickerVariant.Static)
                 {
-                    await Task.Delay(ClosingDelay);
+                    await Task.Delay(TimeSpan.FromMilliseconds(ClosingDelay), TimeProvider);
                     await CloseAsync(false);
                 }
             }
@@ -453,7 +452,7 @@ namespace MudBlazor
                         {
                             await SubmitAsync();
                             await CloseAsync();
-                            _inputReference?.SetText(Text);
+                            _inputReference?.SetTextAsync(Text);
                         }
                     }
 
@@ -481,7 +480,7 @@ namespace MudBlazor
                     break;
                 default:
                     await SubmitAsync();
-                    _inputReference?.SetText(Text);
+                    _inputReference?.SetTextAsync(Text);
                     await CloseAsync();
                     break;
             }

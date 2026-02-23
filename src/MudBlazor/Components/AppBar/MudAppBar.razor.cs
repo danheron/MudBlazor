@@ -4,7 +4,6 @@ using MudBlazor.Utilities;
 
 namespace MudBlazor;
 
-#nullable enable
 
 /// <summary>
 /// Displays actions, branding, navigation and screen titles. Keep the app bar persistent while browsing different pages to ease navigation and access to actions for users.
@@ -20,7 +19,7 @@ public partial class MudAppBar : MudComponentBase
             .AddClass($"mud-appbar-fixed-top", Fixed && !Bottom)
             .AddClass($"mud-appbar-fixed-bottom", Fixed && Bottom)
             .AddClass($"mud-elevation-{Elevation}")
-            .AddClass($"mud-theme-{Color.ToDescriptionString()}", Color != Color.Default)
+            .AddClass($"mud-theme-{Color.ToStringFast(true)}", Color != Color.Default)
             .AddClass(Class)
             .Build();
 

@@ -7,12 +7,12 @@ using System.Globalization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using MudBlazor.Interop;
+using MudBlazor.Resources;
 using MudBlazor.Services;
 using MudBlazor.State;
 using MudBlazor.Utilities;
 using MudBlazor.Utilities.Throttle;
 
-#nullable enable
 namespace MudBlazor
 {
     /// <summary>
@@ -804,8 +804,8 @@ namespace MudBlazor
             new CssBuilder("mud-tabs-tabbar")
                 .AddClass($"mud-tabs-rounded", !ApplyEffectsToContainer && Rounded)
                 .AddClass($"mud-tabs-vertical", _isVerticalTabs)
-                .AddClass($"mud-tabs-tabbar-{Color.ToDescriptionString()}", Color != Color.Default)
-                .AddClass($"mud-tabs-border-{ConvertPosition(Position).ToDescriptionString()}", Border)
+                .AddClass($"mud-tabs-tabbar-{Color.ToStringFast(true)}", Color != Color.Default)
+                .AddClass($"mud-tabs-border-{ConvertPosition(Position).ToStringFast(true)}", Border)
                 .AddClass($"mud-paper-outlined", !ApplyEffectsToContainer && Outlined)
                 .AddClass($"mud-elevation-{Elevation}", !ApplyEffectsToContainer && Elevation != 0)
                 .AddClass(TabHeaderClass)
@@ -835,7 +835,7 @@ namespace MudBlazor
 
         protected string SliderClass =>
             new CssBuilder("mud-tab-slider")
-                .AddClass($"mud-{SliderColor.ToDescriptionString()}", SliderColor != Color.Inherit)
+                .AddClass($"mud-{SliderColor.ToStringFast(true)}", SliderColor != Color.Inherit)
                 .AddClass($"mud-tab-slider-horizontal", Position is Position.Top or Position.Bottom)
                 .AddClass($"mud-tab-slider-vertical", _isVerticalTabs)
                 .AddClass($"mud-tab-slider-horizontal-reverse", Position == Position.Bottom)
@@ -1365,6 +1365,32 @@ namespace MudBlazor
         internal string GetTabListId()
         {
             return _tabListId!;
+        }
+
+        /// <summary>
+        /// Generates a string with the relevant aria label information.
+        /// </summary>
+        internal string GetPrevAriaLabel()
+        {
+            if (_isVerticalTabs)
+                return Localizer[LanguageResource.MudTabs_ScrollUp];
+
+            return RightToLeft
+                ? Localizer[LanguageResource.MudTabs_ScrollRight]
+                : Localizer[LanguageResource.MudTabs_ScrollLeft];
+        }
+
+        /// <summary>
+        /// Generates a string with the relevant aria label information.
+        /// </summary>
+        internal string GetNextAriaLabel()
+        {
+            if (_isVerticalTabs)
+                return Localizer[LanguageResource.MudTabs_ScrollDown];
+
+            return RightToLeft
+                ? Localizer[LanguageResource.MudTabs_ScrollLeft]
+                : Localizer[LanguageResource.MudTabs_ScrollRight];
         }
     }
 }

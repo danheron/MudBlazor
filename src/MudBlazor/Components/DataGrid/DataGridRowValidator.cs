@@ -34,7 +34,6 @@ namespace MudBlazor
             get => _errors.ToArray();
         }
 
-#nullable enable
         /// <summary>
         /// The data to validate for this row.
         /// </summary>
