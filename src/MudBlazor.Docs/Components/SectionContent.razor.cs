@@ -2,10 +2,6 @@
 // MudBlazor licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Reflection;
@@ -52,7 +48,7 @@ public partial class SectionContent
             .AddClass("show-code", _hasCode && ShowCode)
             .Build();
 
-    private string _snippetId = Identifier.Create();
+    private readonly string _snippetId = Identifier.Create();
 
     [Parameter] public string Class { get; set; }
     [Parameter] public bool DarkenBackground { get; set; }
@@ -63,7 +59,7 @@ public partial class SectionContent
     [Parameter] public bool FullWidth { get; set; }
     [Parameter] public string Code { get; set; }
     [Parameter] public string HighLight { get; set; }
-    [Parameter] public IEnumerable<CodeFile> Codes { get; set; }
+    [Parameter] public IReadOnlyList<CodeFile> Codes { get; set; }
     [Parameter] public RenderFragment ChildContent { get; set; }
     [Parameter] public Assembly Assembly { get; set; }
     
@@ -77,7 +73,7 @@ public partial class SectionContent
         if (Codes != null)
         {
             _hasCode = true;
-            _activeCode = Codes.FirstOrDefault()?.code;
+            _activeCode = Codes.FirstOrDefault()?.Code;
         }
         else if (!string.IsNullOrWhiteSpace(Code))
         {
@@ -98,14 +94,9 @@ public partial class SectionContent
 
     private string GetActiveCode(string value)
     {
-        if (value == _activeCode)
-        {
-            return "file-button active";
-        }
-        else
-        {
-            return "file-button";
-        }
+        return value == _activeCode
+            ? "file-button active"
+            : "file-button";
     }
 
     private async Task CopyTextToClipboard()
@@ -116,7 +107,7 @@ public partial class SectionContent
         SnackbarService.Add("Copied to clipboard");
     }
 
-    RenderFragment CodeComponent(string code) => builder =>
+    private RenderFragment CodeComponent(string code) => builder =>
     {
         try
         {
@@ -156,7 +147,7 @@ public partial class SectionContent
         }
     };
 
-    protected virtual async void RunOnTryMudBlazor()
+    protected virtual async Task RunOnTryMudBlazorAsync()
     {
         string firstFile;
         if (Codes == null)
@@ -165,7 +156,12 @@ public partial class SectionContent
         }
         else
         {
-            firstFile = Codes.FirstOrDefault().code;
+            firstFile = Codes.FirstOrDefault()?.Code ?? Code;
+        }
+
+        if (string.IsNullOrWhiteSpace(firstFile))
+        {
+            return;
         }
 
         // We use a separator that won't be in code so we can send 2 files later
@@ -186,23 +182,29 @@ public partial class SectionContent
         // Data models
         if (codeFiles.Contains("MudBlazor.Examples.Data.Models"))
         {
-            if (ElementRegularExpression().Match(codeFiles).Success)
+            if (ElementRegularExpression().IsMatch(codeFiles))
             {
                 var elementCodeFile = "Element.cs" + (char)31 + Snippets.GetCode("Element");
                 codeFiles = codeFiles + (char)31 + elementCodeFile;
             }
 
-            if (ServerRegularExpression().Match(codeFiles).Success)
+            if (ServerRegularExpression().IsMatch(codeFiles))
             {
                 var serverCodeFile = "Server.cs" + (char)31 + Snippets.GetCode("Server");
                 codeFiles = codeFiles + (char)31 + serverCodeFile;
+            }
+
+            if (CompanyRegularExpression().IsMatch(codeFiles))
+            {
+                var companyCodeFile = "Company.cs" + (char)31 + Snippets.GetCode("Company");
+                codeFiles = codeFiles + (char)31 + companyCodeFile;
             }
         }
 
         var codeFileEncoded = codeFiles.ToCompressedEncodedUrl();
         // var tryMudBlazorLocation = "https://localhost:5001/";
-        var tryMudBlazorLocation = "https://try.mudblazor.com/";
-        var url = $"{tryMudBlazorLocation}snippet/{codeFileEncoded}";
+        const string TryMudBlazorLocation = "https://try.mudblazor.com/";
+        var url = $"{TryMudBlazorLocation}snippet/{codeFileEncoded}";
         await JsApiService.OpenInNewTabAsync(url);
     }
 
@@ -214,4 +216,7 @@ public partial class SectionContent
 
     [GeneratedRegex(@"\bServer\b")]
     private static partial Regex ServerRegularExpression();
+
+    [GeneratedRegex(@"\bCompany\b")]
+    private static partial Regex CompanyRegularExpression();
 }

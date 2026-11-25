@@ -52,13 +52,46 @@ namespace MudBlazor
                 .WithChangeHandler(Update);
         }
 
-        private ParameterState<T?> _selectedValueState;
-        private ParameterState<IReadOnlyCollection<T>?> _selectedValuesState;
+        private readonly ParameterState<T?> _selectedValueState;
+        private readonly ParameterState<IReadOnlyCollection<T>?> _selectedValuesState;
 
-        private HashSet<MudListItem<T>> _items = new();
-        private HashSet<MudList<T>> _childLists = new();
+        private readonly List<MudListItem<T>> _items = [];
+        private readonly HashSet<MudList<T>> _childLists = new();
+        private HashSet<MudListItem<T>>? _parentItems;
         private HashSet<T> _selection = new();
+        private MudListItem<T>? _activeItem;
+        private bool _hasSingleSelection;
+        private bool _disposed;
         internal MudList<T> TopLevelList { get; private set; }
+
+        /// <summary>
+        /// Whether this list uses tree semantics because a top-level item owns a nested list.
+        /// </summary>
+        /// <remarks>
+        /// An option allows no <c>aria-expanded</c> and a listbox allows no nested listbox, so expandable items need the tree pattern (#13981).
+        /// </remarks>
+        internal bool IsTree => TopLevelList._parentItems?.Count > 0;
+
+        /// <summary>
+        /// Whether a single selection actually exists, as opposed to <see cref="SelectedValue"/> merely sitting at its default.
+        /// </summary>
+        /// <remarks>
+        /// <c>default(T)</c> is <c>null</c> for reference types but a real value for value types, so an unsupplied <see cref="SelectedValue"/> would otherwise select whichever item happens to equal it, such as an enum's <c>0</c> member (#13358).
+        /// Read from the top-level list because nested lists never receive <see cref="SelectedValue"/> themselves.
+        /// </remarks>
+        private bool HasSingleSelection => TopLevelList._hasSingleSelection;
+
+        /// <inheritdoc />
+        public override Task SetParametersAsync(ParameterView parameters)
+        {
+            // Distinguishes "SelectedValue was never supplied" from "SelectedValue was supplied and happens to be default(T)".
+            if (parameters.TryGetValue<T?>(nameof(SelectedValue), out _))
+            {
+                _hasSingleSelection = true;
+            }
+
+            return base.SetParametersAsync(parameters);
+        }
 
         protected string Classname =>
             new CssBuilder("mud-list")
@@ -250,11 +283,17 @@ namespace MudBlazor
                 {
                     UpdateSelectedItem(_selectedValueState);
                 }
+
+                if (EnsureActiveItem() is not null)
+                {
+                    StateHasChanged();
+                }
             }
         }
 
         internal void Update()
         {
+            StateHasChanged();
             foreach (var item in _items)
                 ((IMudStateHasChanged)item).StateHasChanged();
             foreach (var list in _childLists)
@@ -297,17 +336,67 @@ namespace MudBlazor
 
         internal async Task RegisterAsync(MudListItem<T> item)
         {
+            // Items register once, from OnInitializedAsync, so checking for a duplicate would only make mounting n items cost n².
             _items.Add(item);
-            if (_selectedValueState.Value is not null && Equals(item.GetValue(), _selectedValueState.Value))
+            if (HasSingleSelection && _selectedValueState.Value is not null && Equals(item.GetValue(), _selectedValueState.Value))
             {
                 item.SetSelected(true);
+                _activeItem = item;
                 await _selectedValueState.SetValueAsync(item.GetValue());
+                return;
+            }
+
+            if (_activeItem is null && item.IsEnabled())
+            {
+                _activeItem = item;
             }
         }
 
         internal void Unregister(MudListItem<T> item)
         {
-            _items.Remove(item);
+            if (!_items.Remove(item))
+            {
+                return;
+            }
+
+            SetOwnsNestedList(item, false);
+
+            if (ReferenceEquals(_activeItem, item))
+            {
+                _activeItem = null;
+                EnsureActiveItem();
+            }
+        }
+
+        /// <summary>
+        /// Records whether a top-level item owns a nested list, which decides <see cref="IsTree"/>.
+        /// </summary>
+        /// <remarks>
+        /// Items report this from <c>OnParametersSet</c>, so a <see cref="MudListItem{T}.NestedList"/> that appears or goes away later is tracked too.
+        /// </remarks>
+        internal void SetOwnsNestedList(MudListItem<T> item, bool ownsNestedList)
+        {
+            if (TopLevelList != this)
+            {
+                return;
+            }
+
+            var wasTree = IsTree;
+            if (ownsNestedList)
+            {
+                _parentItems ??= [];
+                _parentItems.Add(item);
+            }
+            else
+            {
+                _parentItems?.Remove(item);
+            }
+
+            if (wasTree != IsTree && !_disposed)
+            {
+                // The container and any items that already rendered still carry the old roles.
+                Update();
+            }
         }
 
         internal void Register(MudList<T> child)
@@ -326,16 +415,34 @@ namespace MudBlazor
 
         internal async Task SetSelectedValueAsync(T? value)
         {
+            var hadSelection = TopLevelList._hasSingleSelection;
+            var valueUnchanged = Comparer.Equals(_selectedValueState.Value, value);
+
+            // Selecting from within the list establishes a selection even when SelectedValue was never supplied.
+            TopLevelList._hasSingleSelection = true;
             await _selectedValueState.SetValueAsync(value);
+
+            // Going from nothing selected to selected is a change even when the value itself did not move, which is what happens when the chosen item equals default(T).
+            // The parameter state suppresses its callback on an unchanged value, so raise it here or an event-only consumer would never hear about the selection it can now see.
+            if (!hadSelection && valueUnchanged)
+            {
+                await SelectedValueChanged.InvokeAsync(value);
+            }
+
             // Find and update selected item based on value
             UpdateSelectedItem(value);
         }
 
         internal async Task SelectValueAsync(T? value)
         {
-            if (SelectionMode != SelectionMode.MultiSelection || value is null)
+            if (SelectionMode != SelectionMode.MultiSelection)
             {
                 return;
+            }
+            // #13232: a null value can't be tracked in SelectedValues; fail loudly instead of silently ignoring the click.
+            if (value is null)
+            {
+                throw new InvalidOperationException($"{nameof(MudListItem<T>)} requires {nameof(MudListItem<T>.Value)} to be set for multi-selection.");
             }
             _selection.Add(value);
             UpdateSelectedItems(_selection);
@@ -355,6 +462,7 @@ namespace MudBlazor
 
         internal void UpdateSelection()
         {
+            StateHasChanged();
             if (SelectionMode == SelectionMode.MultiSelection)
             {
                 UpdateSelectedItems(new HashSet<T>(TopLevelList.GetState<IReadOnlyCollection<T>?>(nameof(TopLevelList.SelectedValues)) ?? Array.Empty<T>(), Comparer));
@@ -372,15 +480,29 @@ namespace MudBlazor
         /// </summary>
         private void UpdateSelectedItem(T? value)
         {
+            MudListItem<T>? selectedItem = null;
+            var hasSelection = HasSingleSelection;
             foreach (var item in _items.ToArray())
             {
-                var selected = value is not null && Comparer.Equals(value, item.GetValue());
+                var selected = hasSelection && value is not null && Comparer.Equals(value, item.GetValue());
                 item.SetSelected(selected);
+                if (selected)
+                {
+                    selectedItem = item;
+                }
             }
             foreach (var childList in _childLists.ToArray())
             {
                 childList.UpdateSelectedItem(value);
             }
+
+            if (selectedItem is not null)
+            {
+                SetActiveItem(selectedItem);
+                return;
+            }
+
+            EnsureActiveItem();
         }
 
         /// <summary>
@@ -398,6 +520,133 @@ namespace MudBlazor
             {
                 childList.SetSelectedValues(selection);
             }
+
+            EnsureActiveItem();
+        }
+
+        internal bool IsInteractive() => !GetReadOnly();
+
+        internal bool IsTabbable(MudListItem<T> item)
+        {
+            if (TopLevelList != this)
+            {
+                return TopLevelList.IsTabbable(item);
+            }
+
+            if (!IsInteractive() || !item.IsEnabled())
+            {
+                return false;
+            }
+
+            return ReferenceEquals(EnsureActiveItem(), item);
+        }
+
+        internal void SetActiveItem(MudListItem<T> item)
+        {
+            if (TopLevelList != this)
+            {
+                TopLevelList.SetActiveItem(item);
+                return;
+            }
+
+            if (ReferenceEquals(_activeItem, item))
+            {
+                return;
+            }
+
+            var previous = _activeItem;
+            _activeItem = item;
+            ((IMudStateHasChanged?)previous)?.StateHasChanged();
+            ((IMudStateHasChanged)item).StateHasChanged();
+        }
+
+        internal async Task FocusAdjacentItemAsync(MudListItem<T> currentItem, int direction)
+        {
+            var currentIndex = _items.IndexOf(currentItem);
+            if (currentIndex >= 0 && currentItem.IsEnabled())
+            {
+                for (var index = currentIndex + direction; index >= 0 && index < _items.Count; index += direction)
+                {
+                    if (_items[index].IsEnabled())
+                    {
+                        await _items[index].FocusAsync();
+                        return;
+                    }
+                }
+
+                await currentItem.FocusAsync();
+                return;
+            }
+
+            var boundaryIndex = direction > 0 ? 0 : _items.Count - 1;
+            for (; boundaryIndex >= 0 && boundaryIndex < _items.Count; boundaryIndex += direction)
+            {
+                if (_items[boundaryIndex].IsEnabled())
+                {
+                    await _items[boundaryIndex].FocusAsync();
+                    return;
+                }
+            }
+        }
+
+        internal async Task FocusBoundaryItemAsync(bool first)
+        {
+            var item = first ? _items.Find(x => x.IsEnabled()) : _items.FindLast(x => x.IsEnabled());
+            if (item is not null)
+            {
+                await item.FocusAsync();
+            }
+        }
+
+        private MudListItem<T>? EnsureActiveItem()
+        {
+            if (TopLevelList != this)
+            {
+                return TopLevelList.EnsureActiveItem();
+            }
+
+            if (_activeItem?.IsEnabled() == true && _items.Contains(_activeItem))
+            {
+                return _activeItem;
+            }
+
+            _activeItem = _items.FirstOrDefault(x => x.IsEnabled());
+            return _activeItem;
+        }
+
+        /// <summary>
+        /// Builds fallback accessibility attributes for the list container.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="MudList{T}"/> derives its container semantics from its selection behavior and nesting.
+        /// </remarks>
+        private Dictionary<string, object?> GetUserAttributes()
+        {
+            var attributes = new Dictionary<string, object?>(UserAttributes, StringComparer.OrdinalIgnoreCase);
+            attributes.TryAdd("role", GetRole());
+
+            // A nested group can't carry aria-multiselectable, so only the outermost container does.
+            if (!GetReadOnly() && ParentList is null && SelectionMode == SelectionMode.MultiSelection)
+            {
+                attributes.TryAdd("aria-multiselectable", "true");
+            }
+
+            return attributes;
+        }
+
+        private string GetRole()
+        {
+            if (GetReadOnly())
+            {
+                return "list";
+            }
+
+            if (ParentList is not null)
+            {
+                return "group";
+            }
+
+            return IsTree ? "tree" : "listbox";
         }
 
         /// <summary>
@@ -405,6 +654,7 @@ namespace MudBlazor
         /// </summary>
         public void Dispose()
         {
+            _disposed = true;
             ParentList?.Unregister(this);
         }
     }

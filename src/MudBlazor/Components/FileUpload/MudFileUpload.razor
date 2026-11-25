@@ -6,7 +6,7 @@
 #pragma warning disable CS0618 // Type or member is obsolete
 }
 
-<MudInputControl Class="@Classname" Style="@Style" Error="HasErrors" ErrorText="@GetErrorText()" Required="@Required">
+<MudInputControl Class="@Classname" Style="@Style" Error="HasErrors" ErrorId="@ErrorIdState.Value" ErrorText="@GetErrorText()" Required="@Required">
     <InputContent>
         @for (var index = 1; index <= _numberOfActiveFileInputs; index++)
         {
@@ -17,15 +17,18 @@
                        style="@InputStyle"
                        hidden="@(Hidden && !_draggingState.Value ? "" : null)"
                        multiple="@(typeof(T) == typeof(IReadOnlyList<IBrowserFile>) ? "" : null)"
+                       webkitdirectory="@(IsFolderMode ? "" : null)"
                        accept="@Accept"
                        disabled="@(GetDisabledState())"
+                       aria-required="@Required.ToString().ToLowerInvariant()"
+                       aria-describedby="@(HasErrors ? ErrorIdState.Value : null)"
                        @attributes="UserAttributes"
-                       @ondrop="OnDragResetAsync"
-                       @ondragleave="OnDragResetAsync"
-                       @ondragend="OnDragResetAsync"
+                       @ondragenter="OnDragEnterAsync"
+                       @ondrop="OnDropAsync"
+                       @ondragleave="OnDragLeaveAsync"
+                       @ondragend="OnDragEndAsync"
                        id="@GetInputId(localIndex)"
-                       required="@Required"
-                       aria-required="@Required.ToString().ToLowerInvariant()" />
+                       required="@Required" />
         }
         @if (CustomContent == null)
         {
@@ -54,7 +57,7 @@
         else
         {
             <CascadingValue Name="ParentDisabled" Value="GetDisabledState()">
-                <div>
+                <div class="mud-file-upload-custom-content">
                     @CustomContent(this)
                 </div>
             </CascadingValue>
@@ -68,17 +71,17 @@
         }
         else
         {
-            <div class="mud-file-upload-files mt-1">
+            <div class="mud-file-upload-files mud-file-upload-files-default-template">
                 <!-- Make sure there is at least one file -->
                 @if (!EqualityComparer<T>.Default.Equals(_filesState.Value, default))
                 {
                     <span class="mud-file-upload-filelist">
-                        @foreach (var file in GetFilenames())
+                        @foreach (var file in GetSelectedFiles())
                         {
                             <MudChip T="string"
                                      Color="Color.Secondary"
                                      Disabled="GetDisabledState()"
-                                     Text="@file"
+                                     Text="@file.Name"
                                      CloseIcon="@Icons.Material.Outlined.Close"
                                      OnClose="@(() => OnFileChipCloseAsync(file))" />
                         }

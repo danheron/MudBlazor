@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using MudBlazor.Resources;
+using MudBlazor.Utilities;
 using MudBlazor.Utilities.Exceptions;
 
 namespace MudBlazor;
@@ -26,8 +27,13 @@ internal sealed partial class TimeSpanConverter : IReversibleConverter<TimeSpan?
         }
 
         var time = DateTime.Today.Add(input.Value);
+        var format = Format();
+        if (string.IsNullOrWhiteSpace(format))
+        {
+            format = Format24Hours;
+        }
 
-        return time.ToString(Format24Hours, Culture());
+        return time.ToString(format, Culture());
     }
 
     public TimeSpan? ConvertBack(string input)
@@ -37,7 +43,14 @@ internal sealed partial class TimeSpanConverter : IReversibleConverter<TimeSpan?
             return null;
         }
 
-        if (DateTime.TryParseExact(input, Format24Hours, Culture(), DateTimeStyles.None, out var time))
+        var format = Format();
+        if (!string.IsNullOrWhiteSpace(format) &&
+            DateTime.TryParseExact(input, format, Culture(), DateTimeStyles.None, out var time))
+        {
+            return time.TimeOfDay;
+        }
+
+        if (DateTime.TryParseExact(input, Format24Hours, Culture(), DateTimeStyles.None, out time))
         {
             return time.TimeOfDay;
         }
@@ -61,6 +74,6 @@ internal sealed partial class TimeSpanConverter : IReversibleConverter<TimeSpan?
         throw new ConversionException(LanguageResource.Converter_InvalidTimeSpan);
     }
 
-    [GeneratedRegex("AM|PM", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex("AM|PM", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexDefaults.MatchTimeoutMilliseconds)]
     private static partial Regex AmPmRegularExpression();
 }

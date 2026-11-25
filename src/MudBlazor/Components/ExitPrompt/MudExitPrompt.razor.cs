@@ -108,7 +108,6 @@ public partial class MudExitPrompt : MudComponentBase, IAsyncDisposable
         if (!await IsNavigationAllowedAsync())
         {
             context.PreventNavigation();
-            return;
         }
     }
 
@@ -117,7 +116,10 @@ public partial class MudExitPrompt : MudComponentBase, IAsyncDisposable
         // For in-app navigation, optionally use the browser confirm dialog when native prompts are enabled.
         if (UseNativePrompt)
         {
-            return await JsRuntime.InvokeAsync<bool>("mudExitPrompt.handleBeforeNavigation", _promptId);
+            // A prompt that cannot be shown must not trap the user on the page.
+            var (success, allowed) = await JsRuntime.InvokeAsyncWithErrorHandling<bool>("mudExitPrompt.handleBeforeNavigation", _promptId);
+
+            return !success || allowed;
         }
 
         // Otherwise, use the MudBlazor confirmation dialog and allow navigation only on explicit confirmation.
@@ -126,7 +128,7 @@ public partial class MudExitPrompt : MudComponentBase, IAsyncDisposable
             TextToDisplay,
             Localizer[LanguageResource.MudExitPrompt_Exit],
             Localizer[LanguageResource.MudExitPrompt_Cancel]
-        ) == true;
+        ) ?? false;
     }
 
     private async Task EnableAsync()

@@ -2,9 +2,11 @@
 // MudBlazor licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 using MudBlazor.Services;
 using MudBlazor.Utilities;
 
@@ -27,6 +29,14 @@ namespace MudBlazor
         private ElementReference _elementReference;
         private ElementReference _elementReference1;
         private IMask _mask = new PatternMask("** **-** **");
+        private bool _disposed;
+        private readonly Lazy<DotNetObjectReference<MudMask>> _dotNetReferenceLazy;
+
+        [DynamicDependency(nameof(CallOnBlurredAsync))]
+        public MudMask()
+        {
+            _dotNetReferenceLazy = new Lazy<DotNetObjectReference<MudMask>>(DotNetObjectReference.Create(this));
+        }
 
         internal string ElementId { get; } = Identifier.Create("mask");
 
@@ -35,12 +45,11 @@ namespace MudBlazor
                 .AddClass($"mud-input-{Variant.ToStringFast(true)}")
                 .AddClass($"mud-input-{Variant.ToStringFast(true)}-with-label", !string.IsNullOrEmpty(Label))
                 .AddClass($"mud-input-adorned-{Adornment.ToStringFast(true)}", Adornment != Adornment.None)
-                .AddClass($"mud-input-margin-{Margin.ToStringFast(true)}", () => Margin != Margin.None)
-                .AddClass("mud-input-underline", () => Underline && Variant != Variant.Outlined)
-                .AddClass("mud-shrink", () => !string.IsNullOrEmpty(ReadText) || Adornment == Adornment.Start || !string.IsNullOrWhiteSpace(Placeholder) || ShrinkLabel)
+                .AddClass($"mud-input-margin-{Margin.ToStringFast(true)}", Margin != Margin.None)
+                .AddClass("mud-input-underline", Underline && Variant != Variant.Outlined)
+                .AddClass("mud-shrink", !string.IsNullOrEmpty(ReadText) || Adornment == Adornment.Start || !string.IsNullOrWhiteSpace(Placeholder) || ShrinkLabel)
                 .AddClass("mud-disabled", GetDisabledState())
                 .AddClass("mud-input-error", HasErrors)
-                .AddClass("mud-ltr", GetInputType() == InputType.Email || GetInputType() == InputType.Telephone)
                 .AddClass($"mud-typography-{Typo.ToStringFast(true)}")
                 .AddClass(Class)
                 .Build();
@@ -50,7 +59,8 @@ namespace MudBlazor
                 .AddClass("mud-input-root")
                 .AddClass($"mud-input-root-{Variant.ToStringFast(true)}")
                 .AddClass($"mud-input-root-adorned-{Adornment.ToStringFast(true)}", Adornment != Adornment.None)
-                .AddClass($"mud-input-root-margin-{Margin.ToStringFast(true)}", () => Margin != Margin.None)
+                .AddClass($"mud-input-root-margin-{Margin.ToStringFast(true)}", Margin != Margin.None)
+                .AddClass("mud-ltr", GetInputType() == InputType.Email || GetInputType() == InputType.Telephone)
                 .AddClass(Class)
                 .Build();
 
@@ -59,7 +69,6 @@ namespace MudBlazor
                 .AddClass($"mud-input-adornment-{Adornment.ToStringFast(true)}", Adornment != Adornment.None)
                 .AddClass($"mud-text", !string.IsNullOrEmpty(AdornmentText))
                 .AddClass($"mud-input-root-filled-shrink", Variant == Variant.Filled)
-                .AddClass(Class)
                 .Build();
 
         protected string ClearButtonClassname =>
@@ -78,6 +87,9 @@ namespace MudBlazor
 
         [Inject]
         private IJsApiService JsApiService { get; set; } = null!;
+
+        [Inject]
+        private IJSRuntime JsRuntime { get; set; } = null!;
 
         /// <summary>
         /// The content within this input.
@@ -183,10 +195,17 @@ namespace MudBlazor
                     ]);
 
                 await KeyInterceptorService.SubscribeAsync(ElementId, options, keyDown: HandleKeyDown);
+
+                if (!_disposed)
+                {
+                    // Attach a JS blur fallback for cases where focus is dismissed without Blazor observing the native blur event, e.g. a Hybrid host window losing focus.
+                    // Otherwise _isFocused stays set and every render re-applies the caret, pulling focus back to this input.
+                    await _elementReference.MudAttachBlurEventWithJS(_dotNetReferenceLazy.Value);
+                }
             }
 
             if (_isFocused && Mask.Selection == null)
-                await SetCaretPositionAsync(Mask.CaretPos, _selection, render: false);
+                await SetCaretPositionAsync(Mask.CaretPos, _selection);
             await base.OnAfterRenderAsync(firstRender);
         }
 
@@ -203,10 +222,10 @@ namespace MudBlazor
         {
             try
             {
-                if (e.CtrlKey && e.Key != "Backspace"
+                if ((e.CtrlKey && e.Key != "Backspace")
                     // on macOS, the copy-paste command is Cmd + V
                     // cmd is identified using the MetaKey property
-                    || e.MetaKey && e.Key != "Backspace"
+                    || (e.MetaKey && e.Key != "Backspace")
                     || e.AltKey
                     || GetReadOnlyState())
                     return;
@@ -237,8 +256,25 @@ namespace MudBlazor
             }
             finally
             {
-                // call user callback
-                await OnKeyDown.InvokeAsync(e);
+                // when MudMask is hosted by a MudTextField, the callback re-renders the parent, which echoes the just-committed value back as our Value parameter.
+                // Without the guard that resync re-applies the masked text via SetText and resets the caret to the end, dropping the next character the user types (#9829).
+                await RaiseKeyCallbackAsync(OnKeyDown, e);
+            }
+        }
+
+        protected internal Task OnKeyUpAsync(KeyboardEventArgs e) => RaiseKeyCallbackAsync(OnKeyUp, e);
+
+        private async Task RaiseKeyCallbackAsync(EventCallback<KeyboardEventArgs> callback, KeyboardEventArgs e)
+        {
+            var wasUpdating = _updating;
+            _updating = true;
+            try
+            {
+                await callback.InvokeAsync(e);
+            }
+            finally
+            {
+                _updating = wasUpdating;
             }
         }
 
@@ -291,19 +327,16 @@ namespace MudBlazor
                 return;
             var text = ConvertSet(ReadValue);
             var cleanText = Mask.GetCleanText();
-            if (string.IsNullOrEmpty(cleanText) && string.IsNullOrEmpty(text))
-                return;
-
-            if (cleanText != text)
-            {
-                var maskText = Mask.Text;
+            if (!IsSameText(cleanText, text))
                 Mask.SetText(text);
-                if (maskText == Mask.Text)
-                    return;
-            }
 
-            if (ReadText != Mask.Text)
+            // Refresh whenever the displayed text disagrees with the mask, not only when the mask itself just changed.
+            // MudTextField shares this mask instance and applies the incoming value to it first, so a value cleared from code left the mask empty while our own text, and with it the rendered input, stayed on the old value (#12822).
+            if (!IsSameText(ReadText, Mask.Text))
                 await UpdateAsync();
+
+            static bool IsSameText(string? first, string? second)
+                => first == second || (string.IsNullOrEmpty(first) && string.IsNullOrEmpty(second));
         }
 
         protected override async Task UpdateValuePropertyAsync(bool updateText)
@@ -349,9 +382,12 @@ namespace MudBlazor
         /// <summary>
         /// Sets the cursor to this input.
         /// </summary>
-        public override ValueTask FocusAsync()
+        public override ValueTask FocusAsync() => FocusAsync(preventScroll: false);
+
+        /// <inheritdoc />
+        internal override ValueTask FocusAsync(bool preventScroll)
         {
-            return _elementReference.FocusAsync();
+            return _elementReference.FocusAsync(preventScroll);
         }
 
         /// <summary>
@@ -404,7 +440,22 @@ namespace MudBlazor
             _isFocused = false;
         }
 
-        private async Task SetCaretPositionAsync(int caret, (int, int)? selection = null, bool render = true)
+        /// <summary>
+        /// Called from JS when the input lost focus without Blazor observing the native blur event.
+        /// </summary>
+        [JSInvokable]
+        public async Task CallOnBlurredAsync()
+        {
+            // If native blur already ran, do not process the fallback callback again.
+            if (!_isFocused)
+            {
+                return;
+            }
+
+            await OnBlurredAsync(new FocusEventArgs { Type = "jsBlur.OnBlur" });
+        }
+
+        private async Task SetCaretPositionAsync(int caret, (int, int)? selection = null)
         {
             if (!_isFocused)
                 return;
@@ -412,14 +463,15 @@ namespace MudBlazor
             if (caret == 0)
                 _caret = 0;
             _selection = selection;
+            // Only while the input really has focus: _isFocused can be stale when a blur was missed, and moving focus back here would take it from another input.
             if (selection == null)
             {
-                await _elementReference.MudSelectRangeAsync(caret, caret);
+                await _elementReference.MudSelectRangeIfFocusedAsync(caret, caret);
             }
             else
             {
                 var sel = selection.Value;
-                await _elementReference.MudSelectRangeAsync(sel.Item1, sel.Item2);
+                await _elementReference.MudSelectRangeIfFocusedAsync(sel.Item1, sel.Item2);
             }
         }
 
@@ -462,7 +514,7 @@ namespace MudBlazor
             _mask = other;
         }
 
-        private async Task OnCutAsync(ClipboardEventArgs obj)
+        private async Task OnCutAsync()
         {
             if (GetReadOnlyState())
                 return;
@@ -476,10 +528,14 @@ namespace MudBlazor
         /// <inheritdoc />
         protected override async ValueTask DisposeAsyncCore()
         {
+            // Set before disposing the reference so a racing first-render blur attach skips.
+            _disposed = true;
+
             await base.DisposeAsyncCore();
 
             if (IsJSRuntimeAvailable)
             {
+                await JsRuntime.InvokeVoidAsyncWithErrorHandling("mudElementRef.removeOnBlurEvent", _elementReference);
                 await KeyInterceptorService.UnsubscribeAsync(ElementId);
                 if (_jsEvent is not null)
                 {
@@ -488,6 +544,11 @@ namespace MudBlazor
                     _jsEvent.Select -= OnSelect;
                     await _jsEvent.DisposeAsync();
                 }
+            }
+
+            if (_dotNetReferenceLazy.IsValueCreated)
+            {
+                _dotNetReferenceLazy.Value.Dispose();
             }
         }
 
@@ -507,7 +568,7 @@ namespace MudBlazor
             await JsApiService.CopyToClipboardAsync(text ?? string.Empty);
         }
 
-        [GeneratedRegex(@"^.$")]
+        [GeneratedRegex(@"^.$", RegexOptions.None, RegexDefaults.MatchTimeoutMilliseconds)]
         private static partial Regex ValidCharacterRegularExpression();
     }
 }

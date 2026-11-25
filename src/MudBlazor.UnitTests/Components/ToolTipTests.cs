@@ -1,6 +1,9 @@
-﻿using AngleSharp.Html.Dom;
+﻿using System.Threading.Tasks;
+using AngleSharp.Html.Dom;
 using AwesomeAssertions;
 using Bunit;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.AspNetCore.Components.Web;
 using MudBlazor.Extensions;
 using MudBlazor.UnitTests.TestComponents.Tooltip;
@@ -147,7 +150,7 @@ namespace MudBlazor.UnitTests.Components
         [TestCase(true, new[] { "mud-tooltip-root", "mud-tooltip-inline" })]
         public void ContainerClass_PropertyRelations(bool inlineValue, string[] expectedClasses)
         {
-            var comp = Context.Render<ToolTipContainerPropertyTest>(p =>
+            var comp = Context.Render<TooltipContainerPropertyTest>(p =>
             p.Add(x => x.Inline, inlineValue));
 
             comp.Nodes.Last().Should().BeAssignableTo<IHtmlElement>();
@@ -160,7 +163,7 @@ namespace MudBlazor.UnitTests.Components
         [Test]
         public async Task InnerClass_ChildContentWrapper()
         {
-            var comp = Context.Render<ToolTipPopoverClassPropertyTest>();
+            var comp = Context.Render<TooltipPopoverClassPropertyTest>();
 
             var button = comp.Find("button");
             await button.ParentElement.PointerEnterAsync(new PointerEventArgs());
@@ -175,7 +178,7 @@ namespace MudBlazor.UnitTests.Components
         [TestCase(true, new[] { "mud-tooltip", "mud-tooltip-arrow" })]
         public async Task PopoverClass_PropertyArrow(bool arrowValue, string[] expectedClasses)
         {
-            var comp = Context.Render<ToolTipPopoverClassPropertyTest>(p =>
+            var comp = Context.Render<TooltipPopoverClassPropertyTest>(p =>
             p.Add(x => x.Arrow, arrowValue));
 
             var button = comp.Find("button");
@@ -193,7 +196,7 @@ namespace MudBlazor.UnitTests.Components
         [TestCase(Color.Dark, new[] { "mud-tooltip", "mud-theme-dark" })]
         public async Task PopoverClass_PropertyColor(Color colorValue, string[] expectedClasses)
         {
-            var comp = Context.Render<ToolTipPopoverClassPropertyTest>(p =>
+            var comp = Context.Render<TooltipPopoverClassPropertyTest>(p =>
             p.Add(x => x.Color, colorValue));
 
             var button = comp.Find("button");
@@ -211,7 +214,7 @@ namespace MudBlazor.UnitTests.Components
         [TestCase(Color.Success, false, new[] { "mud-tooltip", "mud-theme-success" })]
         public async Task PopoverClass_PropertyColorAndArrow(Color colorValue, bool arrowValue, string[] expectedClasses)
         {
-            var comp = Context.Render<ToolTipPopoverClassPropertyTest>(p =>
+            var comp = Context.Render<TooltipPopoverClassPropertyTest>(p =>
             {
                 p.Add(x => x.Color, colorValue);
                 p.Add(x => x.Arrow, arrowValue);
@@ -241,7 +244,7 @@ namespace MudBlazor.UnitTests.Components
 
         public async Task PopoverClass_Placement(Placement placementValue, bool rtlValue, string[] expectedClasses)
         {
-            var comp = Context.Render<ToolTipPlacementPropertyTest>(p =>
+            var comp = Context.Render<TooltipPlacementPropertyTest>(p =>
             {
                 p.Add(x => x.Placement, placementValue);
                 p.Add(x => x.RightToLeft, rtlValue);
@@ -258,7 +261,8 @@ namespace MudBlazor.UnitTests.Components
         [Test]
         public async Task Tooltip_On_Focus()
         {
-            var comp = Context.Render<ToolTipPlacementPropertyTest>();
+            Context.JSInterop.Setup<bool>("mudElementRef.isFocusVisible").SetResult(true);
+            var comp = Context.Render<TooltipPlacementPropertyTest>();
 
             var button = comp.Find("button");
             await button.ParentElement.FocusInAsync(new FocusEventArgs());
@@ -266,6 +270,127 @@ namespace MudBlazor.UnitTests.Components
             var popoverContentNode = comp.Find("#my-tooltip-content").ParentElement;
 
             popoverContentNode.Should().NotBeNull();
+        }
+
+        /// <summary>
+        /// Focus that is not keyboard-visible, such as a tab regaining focus or a dialog restoring it after a pointer action, does not open the tooltip (#13553).
+        /// </summary>
+        [Test]
+        public async Task ShowOnFocus_ShouldNotOpen_WhenFocusIsNotFocusVisible()
+        {
+            Context.JSInterop.Setup<bool>("mudElementRef.isFocusVisible").SetResult(false);
+            var comp = Context.Render<TooltipWithTextTest>(p => p.Add(x => x.TooltipTextContent, "tooltip text"));
+            var tooltip = comp.FindComponent<MudTooltip>().Instance;
+
+            await comp.Find(".mud-tooltip-root").FocusInAsync(new FocusEventArgs());
+
+            tooltip.GetState(x => x.Visible).Should().BeFalse();
+        }
+
+        /// <summary>
+        /// Keyboard-visible focus opens the tooltip after a single focus-visible check.
+        /// </summary>
+        [Test]
+        public async Task ShowOnFocus_ShouldOpen_WhenFocusIsFocusVisible()
+        {
+            Context.JSInterop.Setup<bool>("mudElementRef.isFocusVisible").SetResult(true);
+            var comp = Context.Render<TooltipWithTextTest>(p => p.Add(x => x.TooltipTextContent, "tooltip text"));
+            var tooltip = comp.FindComponent<MudTooltip>().Instance;
+
+            await comp.Find(".mud-tooltip-root").FocusInAsync(new FocusEventArgs());
+
+            tooltip.GetState(x => x.Visible).Should().BeTrue();
+            Context.JSInterop.VerifyInvoke("mudElementRef.isFocusVisible", 1);
+        }
+
+        /// <summary>
+        /// Focus leaving before the focus-visible check completes keeps the tooltip closed.
+        /// </summary>
+        [Test]
+        [CancelAfter(10000)]
+        public async Task ShowOnFocus_ShouldNotReopen_WhenFocusLeftBeforeCheckCompleted()
+        {
+            var focusVisible = Context.JSInterop.Setup<bool>("mudElementRef.isFocusVisible");
+            var comp = Context.Render<TooltipWithTextTest>(p => p.Add(x => x.TooltipTextContent, "tooltip text"));
+            var tooltip = comp.FindComponent<MudTooltip>().Instance;
+
+            var focusIn = comp.Find(".mud-tooltip-root").FocusInAsync(new FocusEventArgs());
+            await comp.Find(".mud-tooltip-root").FocusOutAsync(new FocusEventArgs());
+            focusVisible.SetResult(true);
+            await focusIn.WaitAsync(NUnit.Framework.TestContext.CurrentContext.CancellationToken);
+
+            tooltip.GetState(x => x.Visible).Should().BeFalse();
+        }
+
+        /// <summary>
+        /// Focus skips the focus-visible check when ShowOnFocus is disabled.
+        /// </summary>
+        [Test]
+        public async Task ShowOnFocus_ShouldNotInvokeInterop_WhenShowOnFocusFalse()
+        {
+            var comp = Context.Render<MudTooltip>(p => p
+                .Add(x => x.Text, "tooltip text")
+                .Add(x => x.ShowOnFocus, false)
+                .AddChildContent("<button>Button</button>"));
+
+            await comp.Find(".mud-tooltip-root").FocusInAsync(new FocusEventArgs());
+
+            comp.Instance.GetState(x => x.Visible).Should().BeFalse();
+            Context.JSInterop.VerifyNotInvoke("mudElementRef.isFocusVisible");
+        }
+
+        /// <summary>
+        /// Focus skips the focus-visible check when the tooltip is already visible.
+        /// </summary>
+        [Test]
+        public async Task ShowOnFocus_ShouldNotInvokeInterop_WhenAlreadyVisible()
+        {
+            var comp = Context.Render<MudTooltip>(p => p
+                .Add(x => x.Text, "tooltip text")
+                .Add(x => x.Visible, true)
+                .AddChildContent("<button>Button</button>"));
+
+            await comp.Find(".mud-tooltip-root").FocusInAsync(new FocusEventArgs());
+
+            comp.Instance.GetState(x => x.Visible).Should().BeTrue();
+            Context.JSInterop.VerifyNotInvoke("mudElementRef.isFocusVisible");
+        }
+
+        /// <summary>
+        /// Focus skips the focus-visible check when the tooltip is disabled or has nothing to show.
+        /// </summary>
+        [Test]
+        [TestCase(true, "tooltip text")]
+        [TestCase(false, "")]
+        public async Task ShowOnFocus_ShouldNotInvokeInterop_WhenNothingToShow(bool disabled, string text)
+        {
+            var comp = Context.Render<MudTooltip>(p => p
+                .Add(x => x.Text, text)
+                .Add(x => x.Disabled, disabled)
+                .AddChildContent("<button>Button</button>"));
+
+            await comp.Find(".mud-tooltip-root").FocusInAsync(new FocusEventArgs());
+
+            Context.JSInterop.VerifyNotInvoke("mudElementRef.isFocusVisible");
+        }
+
+        /// <summary>
+        /// With ShowOnClick, the focus a pointer press gives the content does not open the tooltip ahead of pointer up, so the first click opens it.
+        /// </summary>
+        [Test]
+        public async Task ShowOnClick_ShouldOpen_WhenPointerFocusPrecedesPointerUp()
+        {
+            Context.JSInterop.Setup<bool>("mudElementRef.isFocusVisible").SetResult(false);
+            var comp = Context.Render<MudTooltip>(p => p
+                .Add(x => x.Text, "tooltip text")
+                .Add(x => x.ShowOnHover, false)
+                .Add(x => x.ShowOnClick, true)
+                .AddChildContent("<button>Button</button>"));
+
+            await comp.Find(".mud-tooltip-root").FocusInAsync(new FocusEventArgs());
+            await comp.Find(".mud-tooltip-root").PointerUpAsync(new PointerEventArgs());
+
+            comp.Instance.GetState(x => x.Visible).Should().BeTrue();
         }
 
         [Test]
@@ -333,6 +458,7 @@ namespace MudBlazor.UnitTests.Components
         [Test]
         public async Task Tooltip_Disabled_Button_OnFocusIn_NoPopover()
         {
+            Context.JSInterop.Setup<bool>("mudElementRef.isFocusVisible").SetResult(true);
             var comp = Context.Render<TooltipDisabledPropertyTest>(p =>
             {
                 p.Add(x => x.TooltipDisabled, true);
@@ -389,6 +515,67 @@ namespace MudBlazor.UnitTests.Components
             {
                 await div.PointerLeaveAsync(new PointerEventArgs());
                 tooltip.GetState(x => x.Visible).Should().Be(!showOnHover);
+            }
+        }
+
+        [Test]
+        public async Task Tooltip_ShouldNotRerenderChildContent_WhenVisibleChangesInternally()
+        {
+            var complexData = new object();
+            var comp = Context.Render<MudTooltip>(parameters => parameters
+                .Add(p => p.Text, "Tooltip")
+                .AddChildContent<ComplexComponent>(child => child.Add(c => c.Data, complexData))
+            );
+
+            var complexComp = comp.FindComponent<ComplexComponent>().Instance;
+            var initialCount = complexComp.RenderCount;
+            initialCount.Should().Be(1);
+
+            // Simulate hover via bUnit's event trigger
+            var div = comp.Find(".mud-tooltip-root");
+            await div.PointerEnterAsync(new PointerEventArgs());
+
+            // Verify that the tooltip is now visible
+            comp.Instance.GetState(x => x.Visible).Should().BeTrue();
+
+            // Check if ChildContent re-rendered
+            complexComp.RenderCount.Should().Be(initialCount);
+        }
+
+        [Test]
+        public async Task Tooltip_ShouldRerenderChildContent_WhenParentRerenders()
+        {
+            var complexData = new object();
+            var comp = Context.Render<MudTooltip>(parameters => parameters
+                .Add(p => p.Text, "Tooltip")
+                .AddChildContent<ComplexComponent>(child => child.Add(c => c.Data, complexData))
+            );
+
+            var complexComp = comp.FindComponent<ComplexComponent>().Instance;
+            var initialCount = complexComp.RenderCount;
+            initialCount.Should().Be(1);
+
+            // Simulate parent re-render by setting a parameter again
+            await comp.SetParametersAndRenderAsync(parameters => parameters
+                .Add(p => p.Text, "Updated Tooltip")
+            );
+
+            // Should re-render because it should behave as if not encapsulated
+            complexComp.RenderCount.Should().Be(initialCount + 1);
+        }
+
+        private class ComplexComponent : ComponentBase
+        {
+            [Parameter]
+            public object Data { get; set; }
+
+            public int RenderCount { get; private set; }
+
+            protected override void BuildRenderTree(RenderTreeBuilder builder)
+            {
+                base.BuildRenderTree(builder);
+                RenderCount++;
+                builder.AddContent(0, "Complex Component Content");
             }
         }
     }

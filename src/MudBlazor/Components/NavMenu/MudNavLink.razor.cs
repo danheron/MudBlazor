@@ -36,12 +36,38 @@ namespace MudBlazor
 
         protected Dictionary<string, object?> Attributes
         {
-            get => Disabled ? new Dictionary<string, object?>() : new Dictionary<string, object?>
+            get
             {
-                { "href", Href },
-                { "target", Target },
-                { "rel", !string.IsNullOrWhiteSpace(Target) ? "noopener noreferrer" : string.Empty }
-            };
+                // Compared without case so a caller cannot slip navigation attributes past the disabled check by varying their casing, since HTML attribute names are case-insensitive.
+                var attributes = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+                if (!Disabled)
+                {
+                    attributes["href"] = Href;
+                    attributes["target"] = Target;
+                    attributes["rel"] = Rel ?? (!string.IsNullOrWhiteSpace(Target) ? "noopener noreferrer" : string.Empty);
+#if NET11_0_OR_GREATER
+                    if (RelativeToCurrentUri)
+                    {
+                        attributes[nameof(RelativeToCurrentUri)] = true;
+                    }
+#endif
+                }
+
+                foreach (var attribute in UserAttributes)
+                {
+                    attributes[attribute.Key] = attribute.Value;
+                }
+
+                if (Disabled)
+                {
+                    // UserAttributes is a parameter in its own right, so assigning it directly bypasses the per-key matching that would otherwise route these to Href and Target.
+                    // Without this a caller-supplied href leaves a disabled link fully navigable.
+                    attributes.Remove("href");
+                    attributes.Remove("target");
+                }
+
+                return attributes;
+            }
         }
 
         protected int TabIndex => Disabled || NavigationContext is { Disabled: true } or { Expanded: false } ? -1 : 0;
@@ -97,6 +123,17 @@ namespace MudBlazor
         public string? Target { get; set; }
 
         /// <summary>
+        /// The relationship between the current document and the linked document when <see cref="Href"/> is set.
+        /// </summary>
+        /// <remarks>
+        /// Defaults to <c>null</c>, which applies <c>noopener noreferrer</c> whenever <see cref="Target"/> is set.
+        /// Setting this replaces that default. Common values can be found here: <see href="https://www.w3schools.com/tags/att_a_rel.asp" />
+        /// </remarks>
+        [Parameter]
+        [Category(CategoryTypes.NavMenu.ClickAction)]
+        public string? Rel { get; set; }
+
+        /// <summary>
         /// The CSS applied when this link is active.
         /// </summary>
         /// <remarks>
@@ -129,6 +166,18 @@ namespace MudBlazor
         [Parameter]
         [Category(CategoryTypes.General.ClickAction)]
         public string? Href { get; set; }
+
+#if NET11_0_OR_GREATER
+        /// <summary>
+        /// Resolves a relative <see cref="Href"/> against the current page instead of the app's base path.
+        /// </summary>
+        /// <remarks>
+        /// Defaults to <c>false</c>. Available on .NET 11 and later.
+        /// </remarks>
+        [Parameter]
+        [Category(CategoryTypes.General.ClickAction)]
+        public bool RelativeToCurrentUri { get; set; }
+#endif
 
         /// <summary>
         /// Performs a full page load during navigation.
@@ -175,7 +224,11 @@ namespace MudBlazor
 
             if (Href is not null)
             {
+#if NET11_0_OR_GREATER
+                UriHelper.NavigateTo(Href, new NavigationOptions { ForceLoad = ForceLoad, RelativeToCurrentUri = RelativeToCurrentUri });
+#else
                 UriHelper.NavigateTo(Href, ForceLoad);
+#endif
             }
             else
             {

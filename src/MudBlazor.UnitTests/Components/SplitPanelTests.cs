@@ -1,5 +1,6 @@
 ﻿using AwesomeAssertions;
 using Bunit;
+using Microsoft.JSInterop;
 using MudBlazor.UnitTests.TestComponents.SplitPanel;
 using NUnit.Framework;
 
@@ -78,6 +79,40 @@ public class SplitPanelTests : BunitTest
         invocation.Arguments.Count.Should().Be(1);
     }
 
+    /// <summary>
+    /// Verifies that the final reset requested before initialization wins and runs after build (issue #13576).
+    /// </summary>
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ResetDividerPositionFromParentFirstRender_RunsAfterBuild(bool queueSetFirst)
+    {
+        Context.Render<SplitPanelDeferredPositionTest>(parameters => parameters
+            .Add(p => p.QueueOppositeOperationFirst, queueSetFirst));
+
+        var invocations = Context.JSInterop.Invocations.ToArray();
+        invocations.Should().HaveCount(2);
+        invocations[0].Identifier.Should().Be("mudSplitPanel.build");
+        invocations[1].Identifier.Should().Be("mudSplitPanel_resetDividerPosition");
+    }
+
+    /// <summary>
+    /// Verifies that the final set requested before initialization wins and runs after build (issue #13576).
+    /// </summary>
+    [TestCase(false)]
+    [TestCase(true)]
+    public void SetDividerPositionFromParentFirstRender_RunsAfterBuild(bool queueResetFirst)
+    {
+        Context.Render<SplitPanelDeferredPositionTest>(parameters => parameters
+            .Add(p => p.QueueOppositeOperationFirst, queueResetFirst)
+            .Add(p => p.DividerPosition, 123));
+
+        var invocations = Context.JSInterop.Invocations.ToArray();
+        invocations.Should().HaveCount(2);
+        invocations[0].Identifier.Should().Be("mudSplitPanel.build");
+        invocations[1].Identifier.Should().Be("mudSplitPanel_setDividerPosition");
+        invocations[1].Arguments[1].Should().Be(123);
+    }
+
     [Test]
     public async Task ExecutesSetDividerPositionJsCall()
     {
@@ -88,6 +123,56 @@ public class SplitPanelTests : BunitTest
         invocation.Arguments.Count.Should().Be(2);
     }
 
+    /// <summary>
+    /// The panel renders and takes parameter updates when its setup calls hit a lost circuit.
+    /// </summary>
+    [Test]
+    public async Task BuildAndUpdate_Disconnected_Swallowed()
+    {
+        Context.JSInterop.SetupVoid("mudSplitPanel.build", _ => true).SetException(new JSDisconnectedException("disconnected"));
+        Context.JSInterop.SetupVoid("mudSplitPanel_update", _ => true).SetException(new JSDisconnectedException("disconnected"));
+
+        var comp = Context.Render<SplitPanelTest>();
+        await comp.SetParametersAndRenderAsync(parameters => parameters.Add(c => c.Horizontal, true));
+
+        comp.FindAll(".mud-split-panel").Count.Should().Be(1);
+        Context.JSInterop.VerifyInvoke("mudSplitPanel.build");
+    }
+
+    /// <summary>
+    /// Moving the divider after the circuit is gone completes without throwing.
+    /// </summary>
+    [Test]
+    public async Task DividerPositionMethods_Disconnected_Swallowed()
+    {
+        var comp = Context.Render<SplitPanelTest>();
+        Context.JSInterop.SetupVoid("mudSplitPanel_resetDividerPosition", _ => true).SetException(new JSDisconnectedException("disconnected"));
+        Context.JSInterop.SetupVoid("mudSplitPanel_setDividerPosition", _ => true).SetException(new JSDisconnectedException("disconnected"));
+
+        var reset = () => comp.InvokeAsync(() => comp.Instance.ResetDividerPositionAsync());
+        var set = () => comp.InvokeAsync(() => comp.Instance.SetDividerPositionAsync(123));
+
+        await reset.Should().NotThrowAsync();
+        await set.Should().NotThrowAsync();
+    }
+
+    /// <summary>
+    /// Moving the divider still surfaces JavaScript errors to the caller.
+    /// </summary>
+    [Test]
+    public async Task DividerPositionMethods_JSException_Rethrown()
+    {
+        var comp = Context.Render<SplitPanelTest>();
+        Context.JSInterop.SetupVoid("mudSplitPanel_resetDividerPosition", _ => true).SetException(new JSException("failed"));
+        Context.JSInterop.SetupVoid("mudSplitPanel_setDividerPosition", _ => true).SetException(new JSException("failed"));
+
+        var reset = () => comp.InvokeAsync(() => comp.Instance.ResetDividerPositionAsync());
+        var set = () => comp.InvokeAsync(() => comp.Instance.SetDividerPositionAsync(123));
+
+        await reset.Should().ThrowAsync<JSException>();
+        await set.Should().ThrowAsync<JSException>();
+    }
+
     [Test]
     public async Task ExecutesGetDividerPositionJsCall()
     {
@@ -96,5 +181,54 @@ public class SplitPanelTests : BunitTest
 
         var invocation = Context.JSInterop.VerifyInvoke("mudSplitPanel_getDividerPosition");
         invocation.Arguments.Count.Should().Be(1);
+    }
+
+    [Test]
+    public void NoUserId_JsInteropTargetsRenderedContainerId()
+    {
+        var comp = Context.Render<MudSplitPanel>(parameters => parameters
+            .Add(p => p.FirstPanel, builder => builder.AddContent(0, "First Panel"))
+            .Add(p => p.SecondPanel, builder => builder.AddContent(0, "Second Panel")));
+
+        var renderedId = comp.Find(".mud-split-panel").GetAttribute("id");
+        renderedId.Should().NotBeNullOrWhiteSpace();
+
+        // The JS build must target the exact id rendered on the container, or document.getElementById fails.
+        var build = Context.JSInterop.VerifyInvoke("mudSplitPanel.build");
+        build.Arguments[0].Should().Be(renderedId);
+    }
+
+    [Test]
+    public async Task UserProvidedId_OverridesContainerId_AndJsInteropFollowsIt()
+    {
+        var comp = Context.Render<MudSplitPanel>(parameters => parameters
+            .Add(p => p.FirstPanel, builder => builder.AddContent(0, "First Panel"))
+            .Add(p => p.SecondPanel, builder => builder.AddContent(0, "Second Panel"))
+            .AddUnmatched("id", "custom-split"));
+
+        // The consumer id wins on the rendered container (attribute splat comes after the explicit id).
+        comp.Find(".mud-split-panel").GetAttribute("id").Should().Be("custom-split");
+
+        // Regression for #13070: JS build/destroy must follow the effective rendered id, not the internal GUID,
+        // otherwise document.getElementById('<guid>') is null and the divider drag/keyboard handlers never attach.
+        Context.JSInterop.VerifyInvoke("mudSplitPanel.build").Arguments[0].Should().Be("custom-split");
+
+        await comp.Instance.ResetDividerPositionAsync();
+        Context.JSInterop.VerifyInvoke("mudSplitPanel_resetDividerPosition").Arguments[0].Should().Be("custom-split");
+
+        await Context.DisposeComponentsAsync();
+        Context.JSInterop.VerifyInvoke("mudSplitPanel_destroy").Arguments[0].Should().Be("custom-split");
+    }
+
+    /// <summary>
+    /// The divider's accessible name comes from the language resources so it can be translated.
+    /// </summary>
+    [Test]
+    public void Divider_HasLocalizedAccessibleName()
+    {
+        var comp = Context.Render<MudSplitPanel>();
+
+        var divider = comp.Find("[role='separator']");
+        divider.GetAttribute("aria-label").Should().Be("Resize panels");
     }
 }

@@ -1,7 +1,9 @@
 ﻿using AngleSharp.Dom;
 using AwesomeAssertions;
 using Bunit;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
 using MudBlazor.UnitTests.TestComponents.NavLink;
 using NUnit.Framework;
 
@@ -26,6 +28,104 @@ namespace MudBlazor.UnitTests.Components
             // print the generated html
             // select elements needed for the test
             comp.Find("a").GetAttribute("rel").Should().Be(expectedRel);
+        }
+
+#if NET11_0_OR_GREATER
+        /// <summary>
+        /// RelativeToCurrentUri resolves a relative Href against the current page.
+        /// </summary>
+        [Test]
+        public void NavLink_RelativeToCurrentUri_ResolvesHrefAgainstCurrentPage()
+        {
+            Context.Services.GetRequiredService<NavigationManager>().NavigateTo("folder/page");
+
+            var comp = Context.Render<MudNavLink>(parameters => parameters
+                .Add(x => x.Href, "sibling")
+                .Add(x => x.RelativeToCurrentUri, true));
+
+            comp.Find("a").GetAttribute("href").Should().EndWith("/folder/sibling");
+        }
+
+        /// <summary>
+        /// A link with OnClick renders without an anchor and still navigates relative to the current page when clicked.
+        /// </summary>
+        [Test]
+        public async Task NavLink_RelativeToCurrentUri_WithOnClick_NavigatesAgainstCurrentPage()
+        {
+            var navigationManager = Context.Services.GetRequiredService<NavigationManager>();
+            navigationManager.NavigateTo("folder/page");
+
+            var comp = Context.Render<MudNavLink>(parameters => parameters
+                .Add(x => x.Href, "sibling")
+                .Add(x => x.RelativeToCurrentUri, true)
+                .Add(x => x.OnClick, (MouseEventArgs _) => { }));
+
+            await comp.Find(".mud-nav-link").ClickAsync();
+
+            navigationManager.Uri.Should().EndWith("/folder/sibling");
+        }
+#endif
+
+        [TestCase(null)]
+        [TestCase("_blank")]
+        public void NavLink_Rel_ReplacesTheDefault(string target)
+        {
+            var comp = Context.Render<MudNavLink>(parameters => parameters
+                .Add(x => x.Href, "/dashboard")
+                .Add(x => x.Target, target)
+                .Add(x => x.Rel, "nofollow"));
+
+            comp.Find("a").GetAttribute("rel").Should().Be("nofollow");
+        }
+
+        [TestCase("href")]
+        [TestCase("HREF")]
+        [TestCase("target")]
+        public void NavLink_Disabled_DropsNavigationAttributesAssignedDirectly(string attributeName)
+        {
+            // UserAttributes is a parameter, so assigning the dictionary directly skips the per-key matching that routes href/target to Href/Target.
+            // A disabled link must stay inert anyway.
+            var comp = Context.Render<MudNavLink>(parameters => parameters
+                .Add(x => x.Disabled, true)
+                .Add(x => x.UserAttributes, new Dictionary<string, object>
+                {
+                    [attributeName] = "/dashboard",
+                    ["data-testid"] = "nav-disabled"
+                }));
+
+            var anchor = comp.Find("a");
+            anchor.HasAttribute(attributeName).Should().BeFalse();
+            anchor.HasAttribute("href").Should().BeFalse();
+            anchor.GetAttribute("data-testid").Should().Be("nav-disabled", because: "only navigation attributes are dropped");
+        }
+
+        [Test]
+        public void NavLink_Enabled_KeepsNavigationAttributesAssignedDirectly()
+        {
+            // The href here is supplied through UserAttributes rather than the Href parameter, so this exercises the same path as the disabled cases and shows the guard is scoped to Disabled.
+            var comp = Context.Render<MudNavLink>(parameters => parameters
+                .Add(x => x.Href, "/dashboard")
+                .Add(x => x.UserAttributes, new Dictionary<string, object>
+                {
+                    ["href"] = "/override",
+                    ["data-testid"] = "nav-enabled"
+                }));
+
+            var anchor = comp.Find("a");
+            anchor.GetAttribute("href").Should().Be("/override", because: "a caller assigning href directly still overrides Href when the link is enabled");
+            anchor.GetAttribute("data-testid").Should().Be("nav-enabled");
+        }
+
+        [Test]
+        public void NavLink_Rel_IsOmittedWhenDisabled()
+        {
+            var comp = Context.Render<MudNavLink>(parameters => parameters
+                .Add(x => x.Href, "/dashboard")
+                .Add(x => x.Target, "_blank")
+                .Add(x => x.Rel, "nofollow")
+                .Add(x => x.Disabled, true));
+
+            comp.Find("a").HasAttribute("rel").Should().BeFalse();
         }
 
         [Test]
@@ -62,6 +162,33 @@ namespace MudBlazor.UnitTests.Components
             var comp = Context.Render<NavLinkDisabledTest>(parameters => parameters.Add(x => x.Disabled, true));
             await comp.Find("a").ClickAsync();
             comp.Instance.IsNavigated.Should().BeFalse();
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void NavLink_UserAttributes_AppearOnAnchor(bool disabled)
+        {
+            var comp = Context.Render<MudNavLink>(parameters => parameters
+                .Add(x => x.Href, "/dashboard")
+                .Add(x => x.Disabled, disabled)
+                .AddUnmatched("aria-label", "Dashboard")
+                .AddUnmatched("data-testid", "nav-dashboard"));
+            comp.Find("a.mud-nav-link").GetAttribute("aria-label").Should().Be("Dashboard");
+            comp.Find("a.mud-nav-link").GetAttribute("data-testid").Should().Be("nav-dashboard");
+            comp.Find(".mud-nav-item").HasAttribute("aria-label").Should().BeFalse();
+        }
+
+        [Test]
+        public void NavLink_UserAttributes_AppearOnClickableElement()
+        {
+            var comp = Context.Render<MudNavLink>(parameters => parameters
+                .Add(x => x.OnClick, (MouseEventArgs _) => { })
+                .AddUnmatched("aria-label", "Dashboard")
+                .AddUnmatched("data-testid", "nav-dashboard"));
+            comp.FindAll("a").Should().BeEmpty();
+            comp.Find(".mud-nav-link").GetAttribute("aria-label").Should().Be("Dashboard");
+            comp.Find(".mud-nav-link").GetAttribute("data-testid").Should().Be("nav-dashboard");
+            comp.Find(".mud-nav-item").HasAttribute("aria-label").Should().BeFalse();
         }
 
         [Test]

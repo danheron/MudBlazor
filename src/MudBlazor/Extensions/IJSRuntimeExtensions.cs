@@ -28,21 +28,27 @@ namespace MudBlazor
 #if !DEBUG
             catch (JSException)
             {
+                // A missing or failing script must not break the consuming app in release builds.
+                // Debug builds let it bubble up so the broken interop call is noticed while developing.
             }
 #endif
-            // Catch pre-rending errors since there is no browser at this point.
             catch (InvalidOperationException) when (IsUnsupportedJavaScriptRuntime(jsRuntime))
             {
+                // There is no browser during pre-rendering, so the call can never reach JavaScript.
             }
             catch (JSDisconnectedException)
             {
+                // The circuit is already gone, so there is nothing left to invoke the function on.
             }
             catch (TaskCanceledException)
             {
+                // The invocation was cancelled or hit the interop timeout, and a void call leaves nothing to recover.
             }
 #if !DEBUG
             catch (ObjectDisposedException)
             {
+                // The runtime was disposed mid-call, usually during teardown, so the call can never complete.
+                // Debug builds let it bubble up to expose the lifetime bug behind it.
             }
 #endif
         }
@@ -67,21 +73,27 @@ namespace MudBlazor
 #if !DEBUG
             catch (JSException)
             {
+                // A missing or failing script must not break the consuming app in release builds.
+                // Debug builds let it bubble up so the broken interop call is noticed while developing.
             }
 #endif
-            // Catch pre-rending errors since there is no browser at this point.
             catch (InvalidOperationException) when (IsUnsupportedJavaScriptRuntime(jsRuntime))
             {
+                // There is no browser during pre-rendering, so the call can never reach JavaScript.
             }
             catch (JSDisconnectedException)
             {
+                // The circuit is already gone, so there is nothing left to invoke the function on.
             }
             catch (TaskCanceledException)
             {
+                // The caller cancelled the token, and a void call leaves nothing to recover.
             }
 #if !DEBUG
             catch (ObjectDisposedException)
             {
+                // The runtime was disposed mid-call, usually during teardown, so the call can never complete.
+                // Debug builds let it bubble up to expose the lifetime bug behind it.
             }
 #endif
         }
@@ -286,6 +298,32 @@ namespace MudBlazor
                 return (false, fallbackValue);
             }
 #endif
+        }
+
+        /// <summary>
+        /// Invokes the specified JavaScript function asynchronously and catches only <see cref="JSDisconnectedException"/> and <see cref="TaskCanceledException"/>.
+        /// </summary>
+        /// <remarks>
+        /// For public APIs whose callers expect JavaScript and pre-rendering errors to surface in every build configuration.
+        /// </remarks>
+        /// <param name="jsRuntime">The <see cref="IJSRuntime"/>.</param>
+        /// <param name="identifier">An identifier for the function to invoke. For example, the value <c>"someScope.someFunction"</c> will invoke the function <c>window.someScope.someFunction</c>.</param>
+        /// <param name="args">JSON-serializable arguments.</param>
+        /// <returns>A <see cref="ValueTask"/> that represents the asynchronous invocation operation.</returns>
+        internal static async ValueTask InvokeVoidAsyncIgnoreDisconnected(this IJSRuntime jsRuntime, string identifier, params object?[] args)
+        {
+            try
+            {
+                await jsRuntime.InvokeVoidAsync(identifier, args);
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is already gone, so there is nothing left to invoke the function on.
+            }
+            catch (TaskCanceledException)
+            {
+                // The invocation was cancelled or hit the interop timeout, and a void call leaves nothing to recover.
+            }
         }
 
         /// <summary>
